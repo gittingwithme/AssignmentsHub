@@ -1,0 +1,32 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin-dashboard
+Disallow: /super-dashboard
+Disallow: /super-admin
+Disallow: /admin
+Disallow: /login
+Disallow: /sign-up
+Disallow: /auth/
+Disallow: /api/
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /

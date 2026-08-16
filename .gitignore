@@ -1,0 +1,47 @@
+# Debug / scratch artifacts (never commit these)
+ts-errors.txt
+code-export.txt
+db-related-export.txt
+schema-file-hits.txt
+schema.json
+graphql.json
+graphql_schema.json
+schema_and_logic_export.txt
+
+# Editor / agent tool directories
+.cursor/
+.freebuff/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+build/
+
+# Environment files with secrets (never commit actual values)
+# .env.local is allowed as template but should not contain real secrets
+*.env.local
+*.env.production
+*.env.staging
+.env
+*.env.*.local
+
+# Security scanning tools (binaries + archives)
+trufflehog
+trufflehog.exe
+trufflehog.tar.gz
+trufflehog.zip
+
+# WhatsApp / media artifacts
+security maxxing/
+jarvis vid/
+
+# Scan output logs
+trufflehog_scan.log
+scan_full.log
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
