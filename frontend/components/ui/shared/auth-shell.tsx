@@ -9,9 +9,9 @@ export default function AuthShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col w-full">
-      <div className="spot-glow left-[-8%] top-[10%] h-[320px] w-[320px]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)' }} />
-      <div className="spot-glow right-[-10%] top-[-5%] h-[420px] w-[420px]" style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%)' }} />
-      <div className="spot-glow bottom-[-10%] left-[25%] h-[300px] w-[300px]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)' }} />
+      <div className="spot-glow left-[-8%] top-[10%] h-[320px] w-[320px]" style={{ background: 'radial-gradient(circle, rgba(200,27,28,0.06) 0%, transparent 70%)' }} />
+      <div className="spot-glow right-[-10%] top-[-5%] h-[420px] w-[420px]" style={{ background: 'radial-gradient(circle, rgba(222,92,92,0.08) 0%, transparent 70%)' }} />
+      <div className="spot-glow bottom-[-10%] left-[25%] h-[300px] w-[300px]" style={{ background: 'radial-gradient(circle, rgba(200,27,28,0.08) 0%, transparent 70%)' }} />
 
       <div className="page-wrap flex-1 relative z-10 flex flex-col py-6">
         <div className="mb-8 flex items-center justify-between">

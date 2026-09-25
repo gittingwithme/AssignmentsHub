@@ -142,10 +142,19 @@ export async function validateFileSignature(file: File): Promise<FileValidationR
   }
 }
 
-export function generateSecureFilePath(userId: string, orderId: string, category: string, extension: string): string {
+/**
+ * Storage path for admin final outputs.
+ *
+ * Lives under `outputs/{orderId}/` — deliberately WITHOUT the customer's user
+ * id — so the storage owner policies (which only match `orders/{uid}/...`)
+ * never grant the customer read access. Downloads of these files are proxied
+ * server-side (see /api/orders/[id]/files/[fileId]/download) which enforces
+ * the payment/lock state before issuing a signed URL.
+ */
+export function generateSecureFilePath(orderId: string, category: string, extension: string): string {
   const timestamp = Date.now()
   const randomSuffix = Math.random().toString(36).substring(2, 10)
   const sanitizedExt = extension.replace(/[^a-z0-9]/g, '')
-  
-  return `orders/${userId}/${orderId}/${category}-${timestamp}-${randomSuffix}.${sanitizedExt}`
+
+  return `outputs/${orderId}/${category}-${timestamp}-${randomSuffix}.${sanitizedExt}`
 }

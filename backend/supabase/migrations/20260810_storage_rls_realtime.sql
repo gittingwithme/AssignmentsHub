@@ -21,6 +21,7 @@ drop policy if exists "Give authenticated users access to objects in bucket assi
 
 -- Objects live under orders/{user_id}/{order_id}/... so foldername(name)[2]
 -- is the owner's user id.
+drop policy if exists "assignments_owner_insert" on storage.objects;
 create policy "assignments_owner_insert"
   on storage.objects for insert to authenticated
   with check (
@@ -28,6 +29,7 @@ create policy "assignments_owner_insert"
     and (storage.foldername(name))[2] = auth.uid()::text
   );
 
+drop policy if exists "assignments_owner_select" on storage.objects;
 create policy "assignments_owner_select"
   on storage.objects for select to authenticated
   using (
@@ -35,6 +37,7 @@ create policy "assignments_owner_select"
     and (storage.foldername(name))[2] = auth.uid()::text
   );
 
+drop policy if exists "assignments_staff_all" on storage.objects;
 create policy "assignments_staff_all"
   on storage.objects for all to authenticated
   using (

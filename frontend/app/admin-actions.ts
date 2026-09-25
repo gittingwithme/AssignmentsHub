@@ -196,7 +196,7 @@ export async function uploadAdminOutput(formData: FormData) {
 
   const shouldUnlock = await canUnlockOutputs(supabase, orderId)
 
-  const filePath = generateSecureFilePath(order.user_id, orderId, 'final', ext)
+  const filePath = generateSecureFilePath(orderId, 'final', ext)
 
   // Virus scan
   const virusScan = await scanFileForVirus(fileEntry)

@@ -9,6 +9,7 @@ const RATE_LIMITS = {
   login: { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
   signup: { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
   password_reset: { maxAttempts: 3, windowMs: 60 * 60 * 1000 },
+  mfa_verify: { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
 } as const
 
 type RateLimitType = keyof typeof RATE_LIMITS

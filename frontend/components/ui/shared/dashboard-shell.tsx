@@ -42,7 +42,7 @@ const NOTIF_TONE: Record<
   NonNullable<DashboardNotification['tone']>,
   { dot: string; chip: string }
 > = {
-  brand: { dot: 'var(--brand-400)', chip: 'rgba(16,185,129,0.12)' },
+  brand: { dot: 'var(--brand-400)', chip: 'rgba(200,27,28,0.12)' },
   warning: { dot: 'var(--warn-400)', chip: 'rgba(245,185,66,0.12)' },
   error: { dot: 'var(--error, #F87171)', chip: 'rgba(248,113,113,0.12)' },
   info: { dot: 'var(--info, #60A5FA)', chip: 'rgba(96,165,250,0.12)' },
@@ -231,7 +231,7 @@ export default function DashboardShell({
                   aria-label="Search requests"
                   className="h-9 w-52 rounded-md border pl-8 pr-8 text-[13px] outline-none transition-all sm:w-64"
                   style={{
-                    borderColor: 'rgba(16,185,129,0.45)',
+                    borderColor: 'rgba(200,27,28,0.45)',
                     backgroundColor: 'var(--surface-sunken)',
                     color: 'var(--ink)',
                   }}
@@ -274,7 +274,7 @@ export default function DashboardShell({
               <span
                 className="hidden items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] font-medium sm:inline-flex"
                 style={{
-                  borderColor: 'rgba(16,185,129,0.25)',
+                  borderColor: 'rgba(200,27,28,0.25)',
                   backgroundColor: 'var(--brand-900)',
                   color: 'var(--brand-300)',
                 }}

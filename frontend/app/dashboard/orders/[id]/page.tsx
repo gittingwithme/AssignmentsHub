@@ -10,6 +10,7 @@ import Reveal from '@/components/ui/shared/reveal'
 import PaymentStatusNote from '@/components/ui/shared/payment-status-note'
 import { notifyPaymentMade } from '@/app/payment-actions'
 import OrderThread from '@/components/ui/shared/order-thread'
+import StripePayButton from '@/components/ui/shared/stripe-pay-button'
 import {
   isCustomerInputCategory,
   isFinalOutputCategory,
@@ -67,9 +68,14 @@ export default async function CustomerOrderDetailPage({
 
   if (!order) redirect('/dashboard')
 
-  const resolvedFiles = await resolveOrderFilesForDisplay((files ?? []) as OrderFileRow[])
-  const inputFiles = resolvedFiles.filter((file) => isCustomerInputCategory(file.file_category))
-  const finalFiles = resolvedFiles.filter((file) => isFinalOutputCategory(file.file_category))
+  const allFiles = (files ?? []) as OrderFileRow[]
+  // Only resolve URLs for the customer's own input uploads (owner storage
+  // access). Final outputs live in the staff-only `outputs/` prefix and are
+  // downloaded through the lock-aware proxy route instead.
+  const inputFiles = await resolveOrderFilesForDisplay(
+    allFiles.filter((file) => isCustomerInputCategory(file.file_category))
+  )
+  const finalFiles = allFiles.filter((file) => isFinalOutputCategory(file.file_category))
 
   const displayAmount = formatMoney(order.quote_amount_cents ?? invoice?.amount_cents, order.price)
 
@@ -92,6 +98,10 @@ export default async function CustomerOrderDetailPage({
     <DashboardShell
       workspaceLabel="Customer Workspace"
       activeItem="Order Details"
+      roleLabel="Customer"
+      currentUserId={user.id}
+      role="customer"
+      orderContext={{ [order.id]: order.title }}
       header={
         <Reveal className="glass-panel flex flex-col gap-4 rounded-[30px] px-5 py-5 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
@@ -158,43 +168,64 @@ export default async function CustomerOrderDetailPage({
             <div className="premium-card p-6 md:p-8">
               <h2 className="text-xl font-semibold text-white">Payment required</h2>
               <p className="mt-2 text-sm text-zinc-400">
-                Complete the bank transfer below, then submit it for approval.
+                Pay instantly with card or complete a bank transfer below.
               </p>
 
-              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
-                {payoutSettings ? (
-                  <>
-                    <p className="font-medium text-white">{payoutSettings.bank_name}</p>
-                    <p>Account Holder: {payoutSettings.account_holder_name}</p>
-                    <p>IBAN: {payoutSettings.iban}</p>
-                    {payoutSettings.bic_swift ? <p>BIC/SWIFT: {payoutSettings.bic_swift}</p> : null}
-                    {invoice?.reference_code ? (
-                      <p className="mt-2">
-                        Reference: <span className="text-white">{invoice.reference_code}</span>
-                      </p>
-                    ) : null}
-                    {payoutSettings.payment_reference_instructions ? (
-                      <p className="mt-2 text-zinc-400">{payoutSettings.payment_reference_instructions}</p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p>Bank transfer instructions will appear once admin configures payout settings.</p>
-                )}
+              {/* ── Option 1: Stripe ─────────────────────────────── */}
+              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-zinc-400 mb-3">Option 1 — Instant card payment</p>
+                <StripePayButton
+                  orderId={order.id}
+                  invoiceId={invoice?.id}
+                  amount={displayAmount}
+                />
               </div>
 
-              <ActionForm action={notifyPaymentMade} successTitle="Payment submitted" successDescription="Admins have been notified for approval." className="mt-5 space-y-3">
-                <input type="hidden" name="order_id" value={order.id} />
-                <input type="hidden" name="order_title" value={order.title} />
-                <input
-                  type="text"
-                  name="payment_reference"
-                  placeholder="Optional transfer reference"
-                  className="premium-input"
-                />
-                <button type="submit" className="premium-button-primary w-full md:w-auto">
-                  I have made the payment
-                </button>
-              </ActionForm>
+              {/* ── Divider ──────────────────────────────────────── */}
+              <div className="my-5 flex items-center gap-4">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-xs uppercase tracking-[0.22em] text-zinc-500">or</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+
+              {/* ── Option 2: Bank Transfer (existing flow) ───── */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-zinc-400 mb-3">Option 2 — Bank transfer</p>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
+                  {payoutSettings ? (
+                    <>
+                      <p className="font-medium text-white">{payoutSettings.bank_name}</p>
+                      <p>Account Holder: {payoutSettings.account_holder_name}</p>
+                      <p>IBAN: {payoutSettings.iban}</p>
+                      {payoutSettings.bic_swift ? <p>BIC/SWIFT: {payoutSettings.bic_swift}</p> : null}
+                      {invoice?.reference_code ? (
+                        <p className="mt-2">
+                          Reference: <span className="text-white">{invoice.reference_code}</span>
+                        </p>
+                      ) : null}
+                      {payoutSettings.payment_reference_instructions ? (
+                        <p className="mt-2 text-zinc-400">{payoutSettings.payment_reference_instructions}</p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p>Bank transfer instructions will appear once admin configures payout settings.</p>
+                  )}
+                </div>
+
+                <ActionForm action={notifyPaymentMade} successTitle="Payment submitted" successDescription="Admins have been notified for approval." className="mt-4 space-y-3">
+                  <input type="hidden" name="order_id" value={order.id} />
+                  <input type="hidden" name="order_title" value={order.title} />
+                  <input
+                    type="text"
+                    name="payment_reference"
+                    placeholder="Optional transfer reference"
+                    className="premium-input"
+                  />
+                  <button type="submit" className="premium-button w-full md:w-auto">
+                    I have made the bank transfer
+                  </button>
+                </ActionForm>
+              </div>
             </div>
           ) : !hideApprovedBanner && approval ? (
             <PaymentStatusNote
@@ -247,13 +278,13 @@ export default async function CustomerOrderDetailPage({
                 finalFiles.map((file) => (
                   <a
                     key={file.id}
-                    href={file.url || '#'}
+                    href={`/api/orders/${order.id}/files/${file.id}/download`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300 hover:bg-white/[0.05]"
                   >
                     <div>
-                      <p className="font-medium text-white">{file.display_name}</p>
+                      <p className="font-medium text-white">{file.original_filename || file.storage_path}</p>
                       <p className="mt-1 text-xs text-zinc-400">{prettifyFileCategory(file.file_category)}</p>
                     </div>
                     <span className="subtle-link">Download</span>

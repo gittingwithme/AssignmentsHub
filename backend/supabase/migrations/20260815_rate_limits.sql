@@ -24,5 +24,6 @@ create index if not exists rate_limits_first_attempt_idx on public.rate_limits(f
 alter table public.rate_limits enable row level security;
 
 -- Only service role can manage rate limits (server-side only)
+drop policy if exists "rate_limits_service_role_only" on public.rate_limits;
 create policy "rate_limits_service_role_only" on public.rate_limits
   for all to service_role using (true) with check (true);

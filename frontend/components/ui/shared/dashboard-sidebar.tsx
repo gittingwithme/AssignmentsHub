@@ -71,7 +71,7 @@ export default function DashboardSidebar({
         <div className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2">
           <span
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[13px] font-bold"
-            style={{ backgroundColor: 'var(--brand-500)', color: '#04140E' }}
+            style={{ backgroundColor: 'var(--brand-500)', color: '#fff' }}
           >
             AH
           </span>
@@ -185,7 +185,7 @@ export default function DashboardSidebar({
           <span
             className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold"
             style={{
-              border: '1px solid rgba(16,185,129,0.30)',
+              border: '1px solid rgba(200,27,28,0.30)',
               backgroundColor: 'var(--brand-900)',
               color: 'var(--brand-300)',
             }}

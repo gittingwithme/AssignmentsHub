@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { validateSessionInMiddleware, SESSION_CONFIG } from '@/lib/session-management'
+import { validateSessionInProxy, SESSION_CONFIG } from '@/lib/session-management'
 import { checkApiRateLimit, cleanupApiRateLimitStore } from '@/lib/api-rate-limit'
 
 // Simple request metrics (in production, use a proper metrics collector)
@@ -47,7 +47,7 @@ async function fetchMaintenanceSettings(
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const startTime = Date.now()
   let response = NextResponse.next({
     request: {
@@ -135,7 +135,7 @@ export async function middleware(request: NextRequest) {
 
   // Session timeout validation
   if (user) {
-    const sessionCheck = await validateSessionInMiddleware(supabase)
+    const sessionCheck = await validateSessionInProxy(supabase)
     if (!sessionCheck.valid) {
       // Session expired - redirect to login
       await supabase.auth.signOut()

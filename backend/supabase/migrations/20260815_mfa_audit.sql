@@ -47,11 +47,13 @@ create index if not exists security_audit_log_created_at_idx on public.security_
 alter table public.security_audit_log enable row level security;
 
 -- Only service role and staff can read audit logs
+drop policy if exists "security_audit_log_staff_select" on public.security_audit_log;
 create policy "security_audit_log_staff_select" on public.security_audit_log
   for select to authenticated
   using (public.is_staff());
 
 -- Service role can insert (server actions use service role)
+drop policy if exists "security_audit_log_service_insert" on public.security_audit_log;
 create policy "security_audit_log_service_insert" on public.security_audit_log
   for insert to service_role
   with check (true);

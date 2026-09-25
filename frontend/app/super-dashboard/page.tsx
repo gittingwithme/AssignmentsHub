@@ -347,14 +347,14 @@ export default async function SuperDashboardPage({ searchParams }: { searchParam
         {/* ── Permissions ── */}
         {currentTab === 'permissions' && (
         <div className="grid gap-4 xl:grid-cols-1">
-          <section id="permissions" className="mp-card">
+          <section id="permissions" className="mp-card relative z-50" style={{ overflow: 'visible' }}>
             <header className="mp-card-header">
               <div>
                 <h2 className="mp-card-title">User permissions</h2>
                 <p className="mp-card-description">Search users, then assign their platform role.</p>
               </div>
             </header>
-            <div className="mp-card-content">
+            <div className="mp-card-content relative z-50">
               <UserPermissionsSearch currentUserId={user.id} />
             </div>
           </section>

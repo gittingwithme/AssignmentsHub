@@ -17,22 +17,26 @@ create index if not exists mfa_backup_codes_code_hash_idx on public.mfa_backup_c
 alter table public.mfa_backup_codes enable row level security;
 
 -- Users can only see their own backup codes (but only if they have MFA enabled)
+drop policy if exists "mfa_backup_codes_user_select" on public.mfa_backup_codes;
 create policy "mfa_backup_codes_user_select" on public.mfa_backup_codes
   for select to authenticated
   using (user_id = auth.uid());
 
 -- Users can insert their own backup codes (when generating new ones)
+drop policy if exists "mfa_backup_codes_user_insert" on public.mfa_backup_codes;
 create policy "mfa_backup_codes_user_insert" on public.mfa_backup_codes
   for insert to authenticated
   with check (user_id = auth.uid());
 
 -- Users can update their own backup codes (to mark as used)
+drop policy if exists "mfa_backup_codes_user_update" on public.mfa_backup_codes;
 create policy "mfa_backup_codes_user_update" on public.mfa_backup_codes
   for update to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
 -- Service role can do anything (for server actions)
+drop policy if exists "mfa_backup_codes_service_all" on public.mfa_backup_codes;
 create policy "mfa_backup_codes_service_all" on public.mfa_backup_codes
   for all to service_role
   using (true)

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-// Export middleware metrics
+// Export proxy metrics
 const metrics = {
   requests: 0,
   errors: 0,

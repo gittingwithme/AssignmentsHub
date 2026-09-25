@@ -425,7 +425,7 @@ export default function NewOrderForm({
             ) : (
               <label
                 htmlFor="primary_image"
-                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(16,185,129,0.04)]"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(200,27,28,0.04)]"
                 style={{ borderColor: 'var(--hairline-strong)', backgroundColor: 'var(--surface)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ border: '1px solid var(--hairline)', backgroundColor: 'var(--surface-raised)', color: 'var(--brand-400)' }}>
@@ -486,7 +486,7 @@ export default function NewOrderForm({
                 {referenceFiles.length < currentReferenceLimit && (
                   <label
                     htmlFor="reference_images"
-                    className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 text-[12px] font-medium transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(16,185,129,0.04)]"
+                    className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-3 text-[12px] font-medium transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(200,27,28,0.04)]"
                     style={{ borderColor: 'var(--hairline-strong)', color: 'var(--ink-muted)' }}
                   >
                     <ImageIcon size={14} aria-hidden /> Add more images ({referenceFiles.length} of {currentReferenceLimit})
@@ -496,7 +496,7 @@ export default function NewOrderForm({
             ) : (
               <label
                 htmlFor="reference_images"
-                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(16,185,129,0.04)]"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors hover:border-[var(--brand-500)] hover:bg-[rgba(200,27,28,0.04)]"
                 style={{ borderColor: 'var(--hairline-strong)', backgroundColor: 'var(--surface)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ border: '1px solid var(--hairline)', backgroundColor: 'var(--surface-raised)', color: 'var(--brand-400)' }}>

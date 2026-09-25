@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend'
-import { customerOrderUrl, notifyCustomer } from '@/lib/email'
+import { customerOrderUrl, notifyCustomer, escapeHtml } from '@/lib/email'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
@@ -169,6 +169,10 @@ export async function notifyPaymentMade(formData: FormData) {
   const orderTitle = String(formData.get('order_title') || '')
   const paymentReference = String(formData.get('payment_reference') || '').trim()
 
+  if (paymentReference.length > 200) {
+    throw new Error('Payment reference is too long.')
+  }
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select('id, user_id, quote_amount_cents, price')
@@ -294,11 +298,11 @@ export async function notifyPaymentMade(formData: FormData) {
           <h2>Payment waiting for approval</h2>
           <p>A customer has submitted a payment for manual approval.</p>
           <ul>
-            <li><strong>Order ID:</strong> ${orderId}</li>
-            <li><strong>Order title:</strong> ${orderTitle || 'N/A'}</li>
-            <li><strong>Customer ID:</strong> ${user.id}</li>
-            <li><strong>Invoice ID:</strong> ${invoice.id}</li>
-            <li><strong>Reference:</strong> ${paymentReference || 'Not provided'}</li>
+            <li><strong>Order ID:</strong> ${escapeHtml(orderId)}</li>
+            <li><strong>Order title:</strong> ${escapeHtml(orderTitle || 'N/A')}</li>
+            <li><strong>Customer ID:</strong> ${escapeHtml(user.id)}</li>
+            <li><strong>Invoice ID:</strong> ${escapeHtml(invoice.id)}</li>
+            <li><strong>Reference:</strong> ${escapeHtml(paymentReference || 'Not provided')}</li>
           </ul>
           <p>Please review it in the admin workspace.</p>
         `,

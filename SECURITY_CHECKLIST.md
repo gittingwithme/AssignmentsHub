@@ -1,23 +1,40 @@
 # AssignmentsHub Security Implementation Checklist
 
+## Verification & Change Log (2026-08-16)
+
+Independent code-level audit against this checklist, batch fixes applied:
+
+- **Build fixed + 2FA login challenge completed.** `verifyLoginMfa` added (`frontend/app/mfa-verify-actions.ts`), duplicate `getClientIpForAuth` removed, `/login/mfa` page wired, MFA verify rate-limited (5/15min). Users with TOTP can now complete sign-in.
+- **RLS column-tampering closed** (`backend/supabase/migrations/20260816_security_hardening.sql`): triggers now block non-staff from changing `users.role`, `orders` payment/price/lock fields (only the customer → `pending_approval` transition is allowed), `invoices` amounts/status, and `payment_approvals` approval results. Storage owner-select tightened to `orders/{uid}/...` only.
+- **Payment lock enforced at storage level.** Final outputs now upload to `outputs/{order_id}/...` (no customer read access) and downloads go through a lock-aware proxy: `/api/orders/[id]/files/[fileId]/download`.
+- **Fail-closed bot protection**: Turnstile missing secret now BLOCKS auth in production (dev only skips).
+- **Admin email HTML injection fixed**: payment reference / order title escaped in the approval email; reference length capped at 200.
+- **Customer uploads hardened**: 50MB size limit + magic-byte signature check on primary/reference images.
+- **Rich-text sanitizer**: `style` attribute removed from DOMPurify allow-list (CSS injection vector).
+- **Backup codes**: generated with CSPRNG, stored as HMAC-SHA256 (peppered via `BACKUP_CODE_PEPPER`), plaintext only shown once at generation (`BackupCodesManager`); hashes no longer displayed as codes.
+- **Session timeout cookie** (`ah_session_meta`) is now HMAC-signed (Web Crypto, edge-safe) so idle/absolute timeouts can't be forged. Requires `SESSION_SECRET` in production.
+- **Dependencies**: `npm audit` clean (0 vulns) after Next.js 16.3.1 bump (postcss XSS, sharp/libvips CVEs, nanoid).
+
+**Still open (not code):** dependency automation is now in place (Dependabot + CI audit), but legal-page review, PII/data-retention/export/deletion, log aggregation/dashboard, key-rotation schedule, multi-account RLS leakage testing, restoration drills, and penetration testing remain.
+
 ## Authentication & Authorization
 
 ### Server-Side Authentication
-- [x] Enforce server-side authentication in middleware (`frontend/middleware.ts`)
+- [x] Enforce server-side authentication in proxy (`frontend/proxy.ts`)
 - [x] Verify all protected routes use server-side auth checks
 - [x] Audit all server actions for proper authentication (`auth-actions.ts`, `admin-actions.ts`, etc.)
 
 ### Server-Side Admin Checks
 - [x] Verify `requireAdminRole()` in `admin-actions.ts` is used for all admin operations
-- [x] Ensure middleware blocks customer access to `/admin-dashboard` and `/super-admin` (lines 221-229)
+- [x] Ensure proxy blocks customer access to `/admin-dashboard` and `/super-admin` (lines 221-229)
 - [x] Audit all admin endpoints for role validation
 
 ### 2FA/OTP Implementation
 - [x] Research Supabase MFA capabilities (Supabase Auth MFA)
 - [x] Implement TOTP (Time-based One-Time Password) option (`mfa-actions.ts`)
 - [x] Add backup codes for account recovery (`mfa-actions.ts` + `mfa_backup_codes` table)
-- [ ] Create enrollment flow for users to enable 2FA (UI needed)
-- [ ] Add 2FA challenge step in login flow
+- [x] Create enrollment flow for users to enable 2FA (`/dashboard/security`, `mfa-enrollment.tsx`)
+- [x] Add 2FA challenge step in login flow (`/login/mfa` + `verifyLoginMfa`)
 
 ### Strong Password Rules
 - [x] Add client-side password strength validation
@@ -38,9 +55,9 @@
 - [x] Ensure no plaintext password logging or storage
 
 ### Secure Session Cookies
-- [x] Verify Supabase session cookies have `HttpOnly` flag (set in `middleware.ts` cookie handler)
-- [x] Verify `Secure` flag is set in production (set in `middleware.ts` + `session-management.ts`)
-- [x] Set appropriate `SameSite` attribute (Lax) (set in `middleware.ts` + `session-management.ts`)
+- [x] Verify Supabase session cookies have `HttpOnly` flag (set in `proxy.ts` cookie handler)
+- [x] Verify `Secure` flag is set in production (set in `proxy.ts` + `session-management.ts`)
+- [x] Set appropriate `SameSite` attribute (Lax) (set in `proxy.ts` + `session-management.ts`)
 - [x] Configure cookie expiration times (absolute 24hr, idle 30min via `SESSION_CONFIG`)
 
 ### Session Token Storage
@@ -119,9 +136,9 @@
 - [x] Store uploads outside web root or in Supabase Storage
 - [x] Rename files to prevent execution
 - [x] Block executable extensions (.exe, .php, .sh, .bat)
-- [x] Add virus scanning for uploads (ClamAV interface in `lib/virus-scan.ts`)
-- [x] Validate MIME type matches claimed type
-- [x] Quarantine suspicious files
+- [ ] Add virus scanning for uploads — `lib/virus-scan.ts` is an INTERFACE STUB ONLY: no scanner is wired up, always returns `clean` (fail-open). Must be implemented (ClamAV/VirusTotal) or removed.
+- [x] Validate MIME type matches claimed type (magic bytes on admin + customer uploads)
+- [ ] Quarantine suspicious files — stub only (no-op); implement with real scanner
 
 ---
 
@@ -131,7 +148,7 @@
 - [x] Implement rate limiting on login endpoint (5 attempts / 15 min)
 - [x] Implement rate limiting on password reset endpoint (3 attempts / 60 min)
 - [x] Implement rate limiting on signup endpoint (3 attempts / 60 min)
-- [x] Add general API rate limiting (middleware + Cloudflare WAF docs)
+- [x] Add general API rate limiting (proxy + Cloudflare WAF docs)
 - [x] Store rate limit state in Supabase (`rate_limits` table)
 - [x] Add progressive delays on failed auth attempts
 
@@ -172,7 +189,7 @@
 ### HTTPS Enforcement
 - [x] Configure HTTPS redirect in production (handled by hosting platform)
 - [x] Set HSTS header (Strict-Transport-Security) in `next.config.ts`
-- [x] Ensure secure cookies in production (`middleware.ts` + `session-management.ts` set `secure: true` in production)
+- [x] Ensure secure cookies in production (`proxy.ts` + `session-management.ts` set `secure: true` in production)
 - [x] Configure Supabase for HTTPS only (enforced by platform)
 
 ### CORS Restrictions
@@ -199,10 +216,12 @@
 ## Operations, Logging & Monitoring
 
 ### Dependency Scanning
-- [ ] Enable Dependabot or similar tool
-- [ ] Run `npm audit` regularly
-- [ ] Set up automated PRs for security updates
-- [ ] Subscribe to security advisories
+- [x] Enable Dependabot or similar tool (`.github/dependabot.yml`)
+- [x] Run `npm audit` regularly (`.github/workflows/security-audit.yml`, daily)
+- [x] Set up automated PRs for security updates (Dependabot weekly)
+- [ ] Subscribe to security advisories (GitHub watch/advisories for supabase/next)
+
+> Note: `npm audit` is currently clean (0 vulnerabilities, 2026-08-16).
 
 ### Audit Trails
 - [x] Log all authentication events (login, logout, failed attempts)
@@ -222,15 +241,15 @@
 ### Monitoring & Alerts
 - [x] Health check endpoint (`/api/health`)
 - [x] Metrics endpoint (`/api/metrics`) for Prometheus
-- [x] Middleware metrics (`/api/metrics/middleware`)
+- [x] Proxy metrics (`/api/metrics/proxy`)
 - [x] Configure alerts for high error rates (Sentry + `docs/ALERTING_LOGGING.md` runbooks)
 - [x] Monitor for suspicious activity patterns (audit logs + credential-stuffing monitor)
 - [ ] Set up log aggregation (external)
 - [ ] Create dashboard for key metrics (external)
 
 ### Availability & Disaster Recovery
-- [ ] Document backup strategy for Supabase
-- [ ] Test backup restoration process
+- [x] Document backup strategy for Supabase (`docs/BACKUP_STRATEGY.md`)
+- [ ] Test backup restoration process (documented schedule exists; no drill evidence yet)
 - [ ] Implement Blue/Green or canary deployments
 - [ ] Create runbooks for incident response
 - [ ] Define RTO (Recovery Time Objective)

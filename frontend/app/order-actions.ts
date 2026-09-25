@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { customerOrderUrl, notifyCustomer } from '@/lib/email'
 import { sanitizeUserInput, sanitizeRichText } from '@/lib/sanitize'
+import { MAX_FILE_SIZE_BYTES, validateFileSignature } from '@/lib/file-validation'
 
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
@@ -173,10 +174,24 @@ export async function createOrder(formData: FormData) {
   if (!ALLOWED_IMAGE_TYPES.has(primaryImage.type)) {
     redirectWithError('Primary upload must be a valid image file.')
   }
+  if (primaryImage.size > MAX_FILE_SIZE_BYTES) {
+    redirectWithError('Primary upload exceeds the 50MB size limit.')
+  }
+  const primarySignature = await validateFileSignature(primaryImage)
+  if (!primarySignature.valid) {
+    redirectWithError(primarySignature.errors[0])
+  }
 
   for (const file of referenceImages) {
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
       redirectWithError(`Reference file "${file.name}" is not a supported image type.`)
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      redirectWithError(`Reference file "${file.name}" exceeds the 50MB size limit.`)
+    }
+    const refSignature = await validateFileSignature(file)
+    if (!refSignature.valid) {
+      redirectWithError(`Reference file "${file.name}" ${refSignature.errors[0].toLowerCase()}`)
     }
   }
 

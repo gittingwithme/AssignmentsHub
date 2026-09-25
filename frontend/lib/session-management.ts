@@ -18,17 +18,76 @@ interface SessionMetadata {
   userId: string
 }
 
-export async function getSessionMetadata(): Promise<SessionMetadata | null> {
-  const cookieStore = await cookies()
-  const cookie = cookieStore.get(SESSION_CONFIG.SESSION_COOKIE_NAME)
-  
-  if (!cookie?.value) return null
-  
+// The metadata cookie is HMAC-signed so clients can't forge createdAt /
+// lastActivity to defeat the idle/absolute session timeouts. Uses Web Crypto
+// so it works in both the Node runtime and the middleware edge runtime.
+const SESSION_SECRET = process.env.SESSION_SECRET || ''
+
+if (process.env.NODE_ENV === 'production' && !SESSION_SECRET) {
+  console.error(
+    '[session] SESSION_SECRET is not configured - session timeout cookies are not authenticated'
+  )
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b)
+  })
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+async function hmacSign(value: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(SESSION_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value))
+  return bytesToBase64Url(new Uint8Array(sig))
+}
+
+async function hmacVerify(value: string, sig: string): Promise<boolean> {
+  if (!SESSION_SECRET) return false
+  const expected = await hmacSign(value)
+  const a = new TextEncoder().encode(sig)
+  const b = new TextEncoder().encode(expected)
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  return diff === 0
+}
+
+async function encodeMetadata(meta: SessionMetadata): Promise<string> {
+  const payload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(meta)))
+  const sig = await hmacSign(payload)
+  return `${payload}.${sig}`
+}
+
+async function decodeMetadata(raw: string): Promise<SessionMetadata | null> {
+  const dot = raw.lastIndexOf('.')
+  if (dot <= 0) return null
+  const payload = raw.slice(0, dot)
+  const sig = raw.slice(dot + 1)
+  if (!(await hmacVerify(payload, sig))) return null
   try {
-    return JSON.parse(cookie.value) as SessionMetadata
+    return JSON.parse(new TextDecoder().decode(
+      Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+    )) as SessionMetadata
   } catch {
     return null
   }
+}
+
+export async function getSessionMetadata(): Promise<SessionMetadata | null> {
+  const cookieStore = await cookies()
+  const cookie = cookieStore.get(SESSION_CONFIG.SESSION_COOKIE_NAME)
+
+  if (!cookie?.value) return null
+
+  return decodeMetadata(cookie.value)
 }
 
 export async function updateSessionActivity(userId: string): Promise<void> {
@@ -38,8 +97,8 @@ export async function updateSessionActivity(userId: string): Promise<void> {
     lastActivity: Date.now(),
     userId,
   }
-  
-  cookieStore.set(SESSION_CONFIG.SESSION_COOKIE_NAME, JSON.stringify(metadata), {
+
+  cookieStore.set(SESSION_CONFIG.SESSION_COOKIE_NAME, await encodeMetadata(metadata), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -75,7 +134,7 @@ export async function refreshSessionActivity(): Promise<void> {
   if (metadata) {
     metadata.lastActivity = Date.now()
     const cookieStore = await cookies()
-    cookieStore.set(SESSION_CONFIG.SESSION_COOKIE_NAME, JSON.stringify(metadata), {
+    cookieStore.set(SESSION_CONFIG.SESSION_COOKIE_NAME, await encodeMetadata(metadata), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -101,8 +160,8 @@ export async function secureSignOut(): Promise<void> {
   await clearSession()
 }
 
-// Middleware helper to validate session
-export async function validateSessionInMiddleware(
+// Proxy helper to validate session
+export async function validateSessionInProxy(
   supabase: ReturnType<typeof createServerClient>
 ): Promise<{ valid: boolean; userId?: string; reason?: string }> {
   const { data: { user } } = await supabase.auth.getUser()

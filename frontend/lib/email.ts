@@ -67,7 +67,7 @@ export async function getCustomerEmail(userId: string): Promise<string | null> {
   return null
 }
 
-function esc(value: string) {
+export function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -81,8 +81,8 @@ function wrapEmailHtml({ heading, message, details, cta }: CustomerEmailPayload)
     .map(
       (d) => `
         <tr>
-          <td style="padding:6px 12px 6px 0;font-size:13px;color:#73807a;white-space:nowrap">${esc(d.label)}</td>
-          <td style="padding:6px 0;font-size:13px;color:#16211d;font-weight:600">${esc(d.value)}</td>
+          <td style="padding:6px 12px 6px 0;font-size:13px;color:#73807a;white-space:nowrap">${escapeHtml(d.label)}</td>
+          <td style="padding:6px 0;font-size:13px;color:#16211d;font-weight:600">${escapeHtml(d.value)}</td>
         </tr>`
     )
     .join('')
@@ -96,10 +96,10 @@ function wrapEmailHtml({ heading, message, details, cta }: CustomerEmailPayload)
           <span style="color:#ffffff;font-weight:700;font-size:16px;letter-spacing:0.01em">AssignmentsHub</span>
         </div>
         <div style="padding:28px">
-          <h1 style="margin:0 0 12px;font-size:20px;line-height:1.3;color:#0f1714">${esc(heading)}</h1>
-          ${message ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#3f4a45">${esc(message)}</p>` : ''}
+          <h1 style="margin:0 0 12px;font-size:20px;line-height:1.3;color:#0f1714">${escapeHtml(heading)}</h1>
+          ${message ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#3f4a45">${escapeHtml(message)}</p>` : ''}
           ${details && details.length > 0 ? `<table style="border-collapse:collapse;margin:4px 0 8px">${detailRows}</table>` : ''}
-          ${cta ? `<a href="${esc(cta.href)}" style="display:inline-block;margin-top:16px;background:#19B98A;color:#04140E;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;font-size:14px">${esc(cta.label)}</a>` : ''}
+          ${cta ? `<a href="${escapeHtml(cta.href)}" style="display:inline-block;margin-top:16px;background:#19B98A;color:#04140E;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;font-size:14px">${escapeHtml(cta.label)}</a>` : ''}
         </div>
         <div style="padding:16px 28px;border-top:1px solid #e2e8e5;font-size:12px;color:#8a958f;line-height:1.6">
           Academic support, delivered with integrity.<br />If you did not expect this email, you can safely ignore it.

@@ -96,7 +96,7 @@ export default function UserPermissionsSearch({ currentUserId }: { currentUserId
       </div>
 
       {/* Combobox / lookup wizard */}
-      <div ref={wrapperRef} className="relative">
+      <div ref={wrapperRef} className="relative z-50">
         <input
           type="text"
           value={query}
@@ -140,7 +140,7 @@ export default function UserPermissionsSearch({ currentUserId }: { currentUserId
 
         {/* Dropdown list */}
         {dropdownOpen && loaded && (
-          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#111214] shadow-2xl">
+          <div className="absolute z-[100] top-full left-0 mt-2 w-full max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#111214] shadow-2xl">
             {filtered.length === 0 ? (
               <div className="p-4 text-sm text-zinc-400">No users found</div>
             ) : (

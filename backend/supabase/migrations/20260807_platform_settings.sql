@@ -22,6 +22,7 @@ on conflict (id) do nothing;
 alter table public.platform_settings enable row level security;
 
 -- Anyone can read maintenance state (needed for middleware gate)
+drop policy if exists "platform_settings_public_read" on public.platform_settings;
 create policy "platform_settings_public_read"
   on public.platform_settings
   for select
@@ -29,6 +30,7 @@ create policy "platform_settings_public_read"
   using (true);
 
 -- Only super admins can update (via service role in server actions)
+drop policy if exists "platform_settings_super_admin_update" on public.platform_settings;
 create policy "platform_settings_super_admin_update"
   on public.platform_settings
   for update

@@ -6,15 +6,14 @@ import DashboardSidebar, {
 } from '@/components/ui/shared/dashboard-sidebar'
 import ActionForm from '@/components/ui/shared/action-form'
 import Reveal from '@/components/ui/shared/reveal'
-import { unenrollMfa, listMfaFactors, getBackupCodes, generateBackupCodes } from '@/app/mfa-actions'
+import { unenrollMfa, listMfaFactors } from '@/app/mfa-actions'
 import MfaEnrollment from '@/components/dashboard/mfa-enrollment'
-import { BackupCodesDisplay, ActiveSessionsView } from '@/components/dashboard/mfa-enrollment'
+import { BackupCodesManager, ActiveSessionsView } from '@/components/dashboard/mfa-enrollment'
 import {
   ShieldIcon,
   Trash2Icon,
   CheckCircleIcon,
   AlertTriangleIcon,
-  RotateCcwIcon,
 } from 'lucide-react'
 
 function prettifyLabel(value: string | null | undefined) {
@@ -52,15 +51,6 @@ export default async function SecurityPage() {
   const verifiedFactor = factors?.find((f) => f.status === 'verified')
   const hasMfa = !!verifiedFactor
 
-  // Fetch backup codes if MFA is enabled
-  let backupCodes: string[] = []
-  if (hasMfa) {
-    const result = await getBackupCodes()
-    if (result.codes) {
-      backupCodes = result.codes
-    }
-  }
-
   return (
     <DashboardShell
       workspaceLabel="Customer Workspace"
@@ -87,7 +77,7 @@ export default async function SecurityPage() {
                 Manage your two-factor authentication and account security.
               </p>
             </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: 'var(--brand-500)', color: '#04140E' }}>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: 'var(--brand-500)', color: '#fff' }}>
               <ShieldIcon size={20} aria-hidden />
             </div>
           </div>
@@ -117,31 +107,15 @@ export default async function SecurityPage() {
         {/* ── Backup Codes ── */}
         {hasMfa && (
           <Reveal delay={0.1} className="premium-card p-6 md:p-8">
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-white">Backup Codes</h2>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Store these codes in a safe place. Each code can be used once if you lose access to your authenticator app.
-                </p>
-              </div>
-              <ActionForm
-                action={async (formData) => {
-                  const result = await generateBackupCodes()
-                  if (result.error) {
-                    return { success: false, error: result.error }
-                  }
-                  return { success: true, data: result.codes }
-                }}
-                successTitle="Backup codes generated"
-                successDescription="New backup codes have been created. The old codes are now invalid."
-              >
-                <button type="submit" className="premium-button-secondary w-full md:w-auto">
-                  <RotateCcwIcon size={14} className="mr-2" aria-hidden />
-                  Generate New Codes
-                </button>
-              </ActionForm>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Backup Codes</h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Store these codes in a safe place. Each code can be used once if you lose access to your authenticator app.
+              </p>
             </div>
-            <BackupCodesDisplay codes={backupCodes} />
+            <div className="mt-5">
+              <BackupCodesManager />
+            </div>
           </Reveal>
         )}
 
@@ -163,7 +137,7 @@ function MfaEnabledView({ factor }: { factor: { id: string; friendly_name: strin
     <div className="space-y-4">
       <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(16,185,129,0.2)', color: 'var(--brand-400)' }}>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(200,27,28,0.2)', color: 'var(--brand-400)' }}>
             <CheckCircleIcon size={20} aria-hidden />
           </div>
           <div>

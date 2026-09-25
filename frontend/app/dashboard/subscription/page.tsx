@@ -7,6 +7,7 @@ import DashboardSidebar, {
 } from '@/components/ui/shared/dashboard-sidebar'
 import ActionForm from '@/components/ui/shared/action-form'
 import Reveal from '@/components/ui/shared/reveal'
+import StripeSubscribeButton from '@/components/ui/shared/stripe-subscribe-button'
 import {
   requestSubscriptionPlan,
   submitSubscriptionPayment,
@@ -87,6 +88,11 @@ export default async function SubscriptionPage() {
 
   return (
     <DashboardShell
+      workspaceLabel="Customer Workspace"
+      activeItem="Subscription"
+      roleLabel="Customer"
+      currentUserId={user.id}
+      role="customer"
       header={
         <Reveal className="glass-panel flex flex-col gap-3 rounded-[30px] px-5 py-5 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
@@ -171,10 +177,23 @@ export default async function SubscriptionPage() {
                     <li>• Revisions: {plan.revisions_allowed}</li>
                   </ul>
 
-                  <ActionForm action={requestSubscriptionPlan} successTitle="Subscription requested" successDescription="We'll review your plan request shortly." className="mt-6">
+                  <StripeSubscribeButton
+                    planId={plan.id}
+                    planName={plan.name}
+                    price={formatMoney(plan.price_cents)}
+                    className="mt-6"
+                  />
+
+                  <div className="my-4 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-xs uppercase tracking-[0.22em] text-zinc-500">or</span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+
+                  <ActionForm action={requestSubscriptionPlan} successTitle="Subscription requested" successDescription="We'll review your plan request shortly.">
                     <input type="hidden" name="plan_id" value={plan.id} />
-                    <button type="submit" className="premium-button-primary w-full">
-                      Request this plan
+                    <button type="submit" className="premium-button w-full">
+                      Request via bank transfer
                     </button>
                   </ActionForm>
                 </div>

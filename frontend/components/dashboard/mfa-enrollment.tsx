@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useActionState, useEffect } from 'react'
-import { enrollMfa, verifyMfa, unenrollMfa } from '@/app/mfa-actions'
+import { enrollMfa, verifyMfa, unenrollMfa, generateBackupCodes } from '@/app/mfa-actions'
 import {
   SmartphoneIcon,
   QrCodeIcon,
@@ -167,7 +167,7 @@ export default function MfaEnrollment({ initialStep = 'generate' }: { initialSte
       <div className="space-y-6">
         <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(16,185,129,0.2)', color: 'var(--brand-400)' }}>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(200,27,28,0.2)', color: 'var(--brand-400)' }}>
               <CheckCircleIcon size={20} aria-hidden />
             </div>
             <div>
@@ -282,7 +282,7 @@ export function MfaEnabledDisplay({ factorId, friendlyName }: { factorId: string
     <div className="space-y-4">
       <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(16,185,129,0.2)', color: 'var(--brand-400)' }}>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(200,27,28,0.2)', color: 'var(--brand-400)' }}>
             <CheckCircleIcon size={20} aria-hidden />
           </div>
           <div>
@@ -319,6 +319,69 @@ export function MfaEnabledDisplay({ factorId, friendlyName }: { factorId: string
       <p className="mt-3 text-xs text-zinc-500">
         Disabling 2FA will remove the extra layer of security from your account.
       </p>
+    </div>
+  )
+}
+
+// Backup codes manager: plaintext codes are only shown at generation time and
+// are never re-fetched from the server (only hashes are stored).
+export function BackupCodesManager() {
+  const [codes, setCodes] = useState<string[] | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleGenerate() {
+    setGenerating(true)
+    setError(null)
+    try {
+      const result = await generateBackupCodes()
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      setCodes(result.codes || [])
+    } catch {
+      setError('Failed to generate backup codes')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={handleGenerate}
+        disabled={generating}
+        className="premium-button-secondary w-full md:w-auto"
+      >
+        {generating ? (
+          <>
+            <Loader2Icon size={14} className="mr-2 animate-spin" aria-hidden />
+            Generating…
+          </>
+        ) : (
+          <>
+            <RotateCcwIcon size={14} className="mr-2" aria-hidden />
+            {codes ? 'Generate New Codes' : 'Generate Backup Codes'}
+          </>
+        )}
+      </button>
+      {error && <p className="text-sm text-red-400">{error}</p>}
+      {codes ? (
+        <>
+          <p className="text-sm text-amber-400">
+            These codes are only shown once. Store them securely — generating a new set invalidates
+            the previous one.
+          </p>
+          <BackupCodesDisplay codes={codes} />
+        </>
+      ) : (
+        <p className="text-sm text-zinc-400">
+          Backup codes are never stored in plaintext and are only shown once at generation. Generate
+          a set now to use if you lose access to your authenticator app.
+        </p>
+      )}
     </div>
   )
 }
@@ -483,13 +546,13 @@ export function ActiveSessionsView() {
               className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-4"
             >
               <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'var(--brand-500)', color: '#04140E' }}>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'var(--brand-500)', color: '#fff' }}>
                   <MonitorIcon size={18} aria-hidden />
                 </div>
                 <div>
                   <p className="font-medium text-white">
                     {session.device} {session.isCurrent && (
-                      <span className="ml-2 rounded px-1.5 text-[10px] font-medium" style={{ backgroundColor: 'var(--brand-500)', color: '#04140E' }}>
+                      <span className="ml-2 rounded px-1.5 text-[10px] font-medium" style={{ backgroundColor: 'var(--brand-500)', color: '#fff' }}>
                         Current
                       </span>
                     )}

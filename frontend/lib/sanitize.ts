@@ -20,7 +20,7 @@ export function sanitizeHtml(html: string): string {
     ALLOWED_ATTR: [
       'href', 'target', 'rel',
       'src', 'alt', 'width', 'height',
-      'class', 'id', 'style',
+      'class', 'id',
     ],
     ALLOW_DATA_ATTR: false,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
@@ -63,7 +63,7 @@ export function sanitizeHtmlClient(html: string): string {
     ALLOWED_ATTR: [
       'href', 'target', 'rel',
       'src', 'alt', 'width', 'height',
-      'class', 'id', 'style',
+      'class', 'id',
     ],
     ALLOW_DATA_ATTR: false,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],

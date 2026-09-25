@@ -198,7 +198,7 @@ export default function RealtimeNotifications({
             href={toast.href}
             className="pointer-events-auto flex items-start gap-3 rounded-xl border p-3 shadow-2xl transition-transform"
             style={{
-              borderColor: 'rgba(16,185,129,0.35)',
+              borderColor: 'rgba(200,27,28,0.35)',
               backgroundColor: 'var(--surface-raised)',
             }}
           >

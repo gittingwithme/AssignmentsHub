@@ -13,8 +13,9 @@ import { AuditActions } from '@/lib/audit-actions'
 import { detectCredentialStuffing } from '@/lib/credential-stuffing-monitor'
 import { updateSessionActivity } from '@/lib/session-management'
 import { sanitizeUserInput, sanitizeRichText } from '@/lib/sanitize'
+import { challengeMfa } from '@/app/mfa-actions'
 
-async function getRedirectPathForUser(userId: string) {
+export async function getRedirectPathForUser(userId: string) {
   const supabase = await createClient()
 
   const { data: profile } = await supabase
@@ -30,17 +31,32 @@ async function getRedirectPathForUser(userId: string) {
   return '/dashboard'
 }
 
+async function getClientIpForAuth(): Promise<string | null> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || null
+}
+
+async function hasVerifiedMfaFactor(userId: string): Promise<{ factorId?: string; hasMfa: boolean }> {
+  const supabase = await createClient()
+  const { data: factors } = await supabase
+    .from('auth.mfa_factors')
+    .select('id, factor_type, status')
+    .eq('user_id', userId)
+    .eq('factor_type', 'totp')
+    .eq('status', 'verified')
+
+  if (factors && factors.length > 0) {
+    return { factorId: factors[0].id, hasMfa: true }
+  }
+  return { hasMfa: false }
+}
+
 async function getSiteOrigin() {
   const headerStore = await headers()
   const host = headerStore.get('x-forwarded-host') || headerStore.get('host')
   const protocol = headerStore.get('x-forwarded-proto') || 'http'
   if (host) return `${protocol}://${host}`
   return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-}
-
-async function getClientIpForAuth(): Promise<string | null> {
-  const h = await headers()
-  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || null
 }
 
 export async function login(formData: FormData) {
@@ -75,6 +91,26 @@ export async function login(formData: FormData) {
   }
 
   await logAuthEvent(AuditActions.LOGIN_SUCCESS, data.user.id, { email })
+
+  // Check if user has MFA enabled — if so, require TOTP challenge before session is usable
+  const mfaCheck = await hasVerifiedMfaFactor(data.user.id)
+  if (mfaCheck.hasMfa && mfaCheck.factorId) {
+    const challenge = await challengeMfa(mfaCheck.factorId)
+    if (challenge.challengeId) {
+      // Store the challenge so the verify step can complete it
+      await logSecurityEvent({
+        userId: data.user.id,
+        action: AuditActions.MFA_CHALLENGE_CREATED,
+        details: { factorId: mfaCheck.factorId },
+      })
+      await clearRateLimitOnSuccess('login')
+      revalidatePath('/', 'layout')
+      redirect(
+        `/login/mfa?factorId=${encodeURIComponent(mfaCheck.factorId)}&challengeId=${encodeURIComponent(challenge.challengeId)}`
+      )
+    }
+  }
+
   await clearRateLimitOnSuccess('login')
   await updateSessionActivity(data.user.id)
   revalidatePath('/', 'layout')

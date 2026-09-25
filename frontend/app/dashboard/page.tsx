@@ -368,7 +368,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
           <div className="stat-card">
             <div className="flex items-center justify-between gap-3">
               <p className="eyebrow">Plan status</p>
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border" style={{ borderColor: 'rgba(16,185,129,0.25)', backgroundColor: 'var(--brand-900)', color: 'var(--brand-300)' }}>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border" style={{ borderColor: 'rgba(200,27,28,0.25)', backgroundColor: 'var(--brand-900)', color: 'var(--brand-300)' }}>
                 <LayoutDashboard size={14} aria-hidden />
               </span>
             </div>
@@ -436,14 +436,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             <div
               className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full"
               style={{
-                background: 'radial-gradient(circle, rgba(16,185,129,0.14) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(200,27,28,0.14) 0%, transparent 70%)',
               }}
               aria-hidden
             />
             <div
               className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full"
               style={{
-                background: 'radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(222,92,92,0.08) 0%, transparent 70%)',
               }}
               aria-hidden
             />
@@ -454,7 +454,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
                 <span
                   className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base"
                   style={{
-                    border: '1px solid rgba(16,185,129,0.3)',
+                    border: '1px solid rgba(200,27,28,0.3)',
                     backgroundColor: 'var(--brand-900)',
                     color: 'var(--brand-300)',
                   }}
@@ -482,8 +482,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
                         key={t}
                         className="rounded-md px-2 py-0.5 text-[11px] font-medium"
                         style={{
-                          border: '1px solid rgba(16,185,129,0.18)',
-                          backgroundColor: 'rgba(16,185,129,0.06)',
+                          border: '1px solid rgba(200,27,28,0.18)',
+                          backgroundColor: 'rgba(200,27,28,0.06)',
                           color: 'var(--brand-400)',
                         }}
                       >

@@ -13,6 +13,8 @@ const footerLinks = [
   { href: '/academic-integrity', label: 'Academic Integrity' },
 ]
 
+const mono = { fontFamily: 'var(--font-jb, "JetBrains Mono", monospace)' }
+
 export default function Footer() {
   return (
     <footer
@@ -22,12 +24,12 @@ export default function Footer() {
         backgroundColor: 'var(--surface-sunken)',
       }}
     >
-      {/* ── Emerald top accent bar ── */}
+      {/* ── Crimson top accent bar ── */}
       <div
         className="h-[2px] w-full"
         style={{
           background:
-            'linear-gradient(90deg, transparent 0%, var(--brand-600) 25%, var(--brand-400) 50%, var(--brand-600) 75%, transparent 100%)',
+            'linear-gradient(90deg, transparent 0%, var(--brand-600) 25%, var(--brand-500) 50%, var(--brand-600) 75%, transparent 100%)',
           opacity: 0.55,
         }}
       />
@@ -39,8 +41,8 @@ export default function Footer() {
           {/* Brand block */}
           <div className="flex items-center gap-3">
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold"
-              style={{ backgroundColor: 'var(--brand-500)', color: '#04140E' }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center text-[13px] font-medium"
+              style={{ backgroundColor: 'var(--brand-500)', color: '#fff' }}
             >
               AH
             </span>
@@ -53,17 +55,18 @@ export default function Footer() {
               </p>
               <p
                 className="mt-0.5 text-[11px]"
-                style={{ color: 'var(--ink-faint)' }}
+                style={{ ...mono, color: 'var(--ink-faint)' }}
               >
                 Academic excellence, delivered.
               </p>
             </div>
           </div>
 
-          {/* Nav links — pure CSS hover via footer-link class defined in globals */}
+          {/* Nav links */}
           <nav
             aria-label="Footer navigation"
             className="flex flex-wrap items-center gap-x-5 gap-y-2"
+            style={mono}
           >
             {footerLinks.map((link) => (
               <Link
@@ -84,7 +87,7 @@ export default function Footer() {
         >
           <p
             className="text-[12px]"
-            style={{ color: 'var(--ink-faint)' }}
+            style={{ ...mono, color: 'var(--ink-faint)' }}
           >
             © {new Date().getFullYear()} {siteConfig.name}.{' '}
             {siteConfig.footerNote}
@@ -93,9 +96,9 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Secure badge */}
             <span
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium"
+              className="inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-medium"
               style={{
-                borderColor: 'rgba(16,185,129,0.2)',
+                borderColor: 'rgba(200,27,28,0.35)',
                 backgroundColor: 'var(--brand-900)',
                 color: 'var(--brand-400)',
               }}
@@ -106,7 +109,7 @@ export default function Footer() {
 
             {/* Academic integrity badge */}
             <span
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium"
+              className="inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-medium"
               style={{
                 borderColor: 'var(--hairline-strong)',
                 backgroundColor: 'rgba(255,255,255,0.02)',

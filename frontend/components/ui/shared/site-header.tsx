@@ -15,6 +15,8 @@ const navItems = [
   { href: '/contact', label: 'Contact' },
 ]
 
+const mono = { fontFamily: 'var(--font-jb, "JetBrains Mono", monospace)' }
+
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -35,32 +37,27 @@ export default function SiteHeader() {
   }, [open])
 
   return (
-    <header className="page-wrap sticky top-3 z-50 pt-4 md:pt-5">
-      <div
-        className={cn(
-          'mp-card flex items-center justify-between px-4 py-3 transition-all duration-500 md:px-5 shadow-none border-b',
-          scrolled && 'border-[var(--hairline-strong)] shadow-[0_18px_50px_rgba(0,0,0,0.45)]',
-        )}
-        style={{
-          backgroundColor: scrolled ? 'var(--surface)' : 'var(--surface-raised)',
-        }}
-      >
+    <header className="sticky top-0 z-50 w-full transition-colors duration-300" style={scrolled ? { backgroundColor: 'rgba(8,9,9,0.86)', borderBottom: '1px solid var(--hairline)', backdropFilter: 'blur(14px)' } : { backgroundColor: 'transparent', borderBottom: '1px solid transparent' }}>
+      <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-4 md:px-6">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
-          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--surface-sunken)] text-sm font-semibold text-[var(--ink)] transition-all duration-300 group-hover:border-[rgba(16,185,129,0.30)] group-hover:bg-[var(--brand-900)] group-hover:text-[var(--brand-300)]">
-            <span className="relative">AH</span>
+          <div className="flex h-9 w-9 items-center justify-center bg-[var(--brand-500)] text-sm font-medium text-white transition-colors group-hover:bg-[var(--brand-600)]">
+            AH
           </div>
-          <div className="leading-tight transition-all duration-300 group-hover:translate-x-0.5">
-            <p className="text-sm font-semibold text-[var(--ink)]">{siteConfig.name}</p>
-            <p className="text-[11px] text-[var(--ink-faint)]">{siteConfig.footerNote}</p>
+          <div className="leading-tight">
+            <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--ink)]">{siteConfig.name}</p>
+            <p className="text-[11px]" style={{ ...mono, color: 'var(--ink-faint)' }}>
+              {siteConfig.footerNote}
+            </p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="relative text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-0 after:bg-[var(--brand-400)] after:transition-all after:duration-300 hover:after:w-full"
+              className="relative text-[13px] text-[var(--ink-muted)] transition-colors after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-0 after:bg-[var(--brand-500)] after:transition-all after:duration-300 hover:text-[var(--ink)] hover:after:w-full"
+              style={mono}
             >
               {item.label}
             </Link>
@@ -70,7 +67,8 @@ export default function SiteHeader() {
         <div className="flex items-center gap-3">
           <Link
             href="/login"
-            className="hidden text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors md:inline-flex"
+            className="hidden text-[13px] text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)] md:inline-flex"
+            style={mono}
           >
             Log in
           </Link>
@@ -86,7 +84,7 @@ export default function SiteHeader() {
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hairline)] bg-[var(--surface-sunken)] text-[var(--ink-muted)] transition-colors hover:border-[rgba(16,185,129,0.30)] hover:bg-[var(--brand-900)] hover:text-[var(--brand-300)] lg:hidden"
+            className="flex h-10 w-10 items-center justify-center border border-[var(--hairline-strong)] bg-[var(--surface-sunken)] text-[var(--ink-muted)] transition-colors hover:border-[rgba(200,27,28,0.40)] hover:text-[var(--brand-400)] lg:hidden"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -96,22 +94,24 @@ export default function SiteHeader() {
       {/* Mobile menu */}
       <div
         className={cn(
-          'lg:hidden overflow-hidden transition-[max-height,opacity] duration-400 ease-out',
-          open ? 'mt-2 max-h-[460px] opacity-100' : 'max-h-0 opacity-0',
+          'lg:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-out',
+          open ? 'max-h-[520px] opacity-100' : 'max-h-0 opacity-0',
         )}
+        style={{ backgroundColor: 'rgba(10,11,11,0.97)' }}
       >
-        <div className="mp-card space-y-1 p-3">
+        <div className="space-y-0 border-t border-[var(--hairline)] p-3">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="block rounded-xl px-4 py-3 text-sm font-medium text-[var(--ink-muted)] transition-all duration-200 hover:bg-[var(--surface-raised)] hover:text-[var(--ink)]"
+              className="block border-b border-[var(--hairline)] px-4 py-3 text-[13px] text-[var(--ink-muted)] transition-all duration-200 last:border-b-0 hover:pl-5 hover:text-[var(--ink)]"
+              style={mono}
             >
               {item.label}
             </Link>
           ))}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          <div className="grid grid-cols-2 gap-2 pt-3">
             <Link
               href="/login"
               onClick={() => setOpen(false)}

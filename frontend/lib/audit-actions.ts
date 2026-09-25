@@ -12,6 +12,7 @@ export const AuditActions = {
   MFA_VERIFIED: 'mfa_verified',
   MFA_UNENROLLED: 'mfa_unenrolled',
   MFA_CHALLENGED: 'mfa_challenged',
+  MFA_CHALLENGE_CREATED: 'mfa_challenge_created',
   ADMIN_LOGIN: 'admin_login',
   ADMIN_ACTION: 'admin_action',
   ORDER_CREATED: 'order_created',

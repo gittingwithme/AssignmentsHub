@@ -238,7 +238,7 @@ export default function OrderThread({
                           isClient
                             ? { backgroundColor: 'rgba(30,64,175,0.55)', borderLeft: '3px solid #93C5FD' }
                             : {
-                                backgroundColor: 'rgba(16,185,129,0.08)',
+                                backgroundColor: 'rgba(200,27,28,0.08)',
                                 borderLeft: '3px solid var(--brand-400)',
                               }
                         }
@@ -276,7 +276,7 @@ export default function OrderThread({
                       style={
                         isClient
                           ? { backgroundColor: '#1E40AF', color: '#FFFFFF' }
-                          : { backgroundColor: 'var(--brand-500)', color: '#04140E' }
+                          : { backgroundColor: 'var(--brand-500)', color: '#fff' }
                       }
                     >
                       <div
@@ -330,7 +330,7 @@ export default function OrderThread({
         {replyTo && (
           <div
             className="flex items-start gap-2 rounded-t-xl border border-b-0 px-3 py-2"
-            style={{ borderColor: 'var(--hairline)', backgroundColor: 'rgba(16,185,129,0.07)' }}
+            style={{ borderColor: 'var(--hairline)', backgroundColor: 'rgba(200,27,28,0.07)' }}
           >
             <ReplyIcon size={12} className="mt-0.5 shrink-0" style={{ color: 'var(--brand-400)' }} aria-hidden />
             <p className="min-w-0 flex-1 text-[12px]" style={{ color: 'var(--ink-muted)' }}>

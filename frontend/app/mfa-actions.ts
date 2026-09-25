@@ -132,7 +132,7 @@ export async function listMfaFactors(): Promise<{ factors?: any[]; error?: strin
   }
 }
 
-export async function getBackupCodes(): Promise<{ codes?: string[]; error?: string }> {
+export async function getBackupCodes(): Promise<{ count?: number; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -141,9 +141,9 @@ export async function getBackupCodes(): Promise<{ codes?: string[]; error?: stri
   }
 
   try {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('mfa_backup_codes')
-      .select('code_hash')
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('used', false)
 
@@ -151,12 +151,27 @@ export async function getBackupCodes(): Promise<{ codes?: string[]; error?: stri
       return { error: error.message }
     }
 
-    // In production, we'd store hashed codes and verify against hashes
-    // For now, return placeholder
-    return { codes: data?.map((d) => d.code_hash) || [] }
+    // Plaintext codes are never stored and never returned after generation.
+    return { count: count ?? 0 }
   } catch (error) {
     return { error: 'Failed to get backup codes' }
   }
+}
+
+// HMAC-SHA256 with a server-side pepper so a leaked database can't be used to
+// brute-force backup codes offline. Falls back to plain SHA-256 (dev only).
+async function hashBackupCode(code: string): Promise<string> {
+  const crypto = await import('crypto')
+  const pepper = process.env.BACKUP_CODE_PEPPER
+
+  if (pepper) {
+    return crypto.createHmac('sha256', pepper).update(code).digest('hex')
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[mfa] BACKUP_CODE_PEPPER not configured - backup code hashes are not peppered')
+  }
+  return crypto.createHash('sha256').update(code).digest('hex')
 }
 
 export async function generateBackupCodes(): Promise<{ codes?: string[]; error?: string }> {
@@ -168,15 +183,18 @@ export async function generateBackupCodes(): Promise<{ codes?: string[]; error?:
   }
 
   try {
-    // Generate 10 backup codes
+    // Generate 10 backup codes using a cryptographically secure RNG
+    const crypto = await import('crypto')
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     const codes = Array.from({ length: 10 }, () => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-      return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+      return Array.from({ length: 8 }, () => chars[crypto.randomInt(chars.length)]).join('')
     })
 
-    // Hash codes for storage (using simple hash for demo - use bcrypt in production)
-    const crypto = await import('crypto')
-    const codeHashes = codes.map(code => crypto.createHash('sha256').update(code).digest('hex'))
+    // Hash codes for storage (never store plaintext)
+    const codeHashes: string[] = []
+    for (const code of codes) {
+      codeHashes.push(await hashBackupCode(code))
+    }
 
     // Delete old unused codes
     await supabase
@@ -215,8 +233,7 @@ export async function verifyBackupCode(code: string): Promise<{ success: boolean
   }
 
   try {
-    const crypto = await import('crypto')
-    const codeHash = crypto.createHash('sha256').update(code).digest('hex')
+    const codeHash = await hashBackupCode(code)
 
     const { data, error } = await supabase
       .from('mfa_backup_codes')
