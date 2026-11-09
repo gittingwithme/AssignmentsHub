@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   async headers() {
     const headers = [
       {
@@ -33,7 +37,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:; " +
               "font-src 'self' data:; " +
               "media-src 'self' https://d8j0ntlcm91z4.cloudfront.net; " +
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://challenges.cloudflare.com https://api.stripe.com; " +
+              "connect-src 'self' ws: wss: https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://challenges.cloudflare.com https://api.stripe.com; " +
               "frame-src https://challenges.cloudflare.com https://js.stripe.com https://checkout.stripe.com; " +
               "frame-ancestors 'none'; " +
               "base-uri 'self'; " +

@@ -61,6 +61,9 @@ export default async function NewOrderPage({
     <DashboardShell
       workspaceLabel="Customer Workspace"
       activeItem="New Request"
+      roleLabel="Customer"
+      currentUserId={user.id}
+      role="customer"
       header={
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">

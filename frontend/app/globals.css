@@ -157,6 +157,25 @@ body {
     .page-wrap { padding-inline: 1.5rem; }
   }
 
+  /* ── Auth Card ── */
+  .auth-card {
+    border-radius: 0.5rem;
+    border: 1px solid var(--hairline);
+    background-color: var(--surface);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (min-width: 640px) {
+    .auth-card {
+      padding: 2rem;
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.35s ease-out forwards;
+  }
+
   /* ── Magic Patterns Card ── */
   .mp-card {
     overflow: hidden;
@@ -677,7 +696,4 @@ body {
   .footer-nav-link:hover {
     color: var(--ink-muted);
   }
-
-  /* Animate in */
-  .animate-fade-up { animation: fade-up 220ms cubic-bezier(0.16,1,0.3,1) both; }
 }

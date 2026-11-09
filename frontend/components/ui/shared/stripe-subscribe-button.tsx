@@ -66,8 +66,8 @@ export default function StripeSubscribeButton({
         {loading
           ? 'Redirecting…'
           : price
-            ? `Subscribe ${price} via Stripe`
-            : `Subscribe via Stripe`}
+            ? `Subscribe (${price})`
+            : `Subscribe`}
       </button>
       {error ? (
         <p className="mt-2 text-sm text-red-400">{error}</p>

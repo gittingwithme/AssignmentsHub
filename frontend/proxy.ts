@@ -72,7 +72,7 @@ export async function proxy(request: NextRequest) {
             sameSite: options.sameSite || 'lax',
             path: options.path || '/',
           }
-          request.cookies.set({ name, value, ...secureOptions })
+          request.cookies.set(name, value)
           response = NextResponse.next({
             request: { headers: request.headers },
           })
@@ -87,11 +87,11 @@ export async function proxy(request: NextRequest) {
             sameSite: options.sameSite || 'lax',
             path: options.path || '/',
           }
-          request.cookies.set({ name, value: '', ...secureOptions })
+          request.cookies.set(name, '')
           response = NextResponse.next({
             request: { headers: request.headers },
           })
-          response.cookies.set({ name, value: '', ...secureOptions })
+          response.cookies.set({ name, value: '', ...secureOptions, maxAge: 0 })
         },
       },
     }
@@ -133,16 +133,24 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  function createRedirect(targetUrl: URL) {
+    const redirectRes = NextResponse.redirect(targetUrl)
+    response.cookies.getAll().forEach((c) => {
+      redirectRes.cookies.set(c.name, c.value, c)
+    })
+    return redirectRes
+  }
+
   // Session timeout validation
   if (user) {
-    const sessionCheck = await validateSessionInProxy(supabase)
+    const sessionCheck = await validateSessionInProxy(request)
     if (!sessionCheck.valid) {
       // Session expired - redirect to login
       await supabase.auth.signOut()
       url.pathname = '/login'
       const errorMsg = sessionCheck.reason || 'Session expired'
       url.searchParams.set('error', encodeURIComponent(errorMsg))
-      return NextResponse.redirect(url)
+      return createRedirect(url)
     }
   }
 
@@ -199,7 +207,7 @@ export async function proxy(request: NextRequest) {
 
       if (shouldGate && path !== '/maintenance') {
         url.pathname = '/maintenance'
-        return NextResponse.redirect(url)
+        return createRedirect(url)
       }
     }
   }
@@ -213,7 +221,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return createRedirect(url)
   }
 
   if (user) {
@@ -227,12 +235,12 @@ export async function proxy(request: NextRequest) {
 
     if ((path.startsWith('/admin-dashboard') || path.startsWith('/admin')) && role === 'customer') {
       url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      return createRedirect(url)
     }
 
     if ((path.startsWith('/super-dashboard') || path.startsWith('/super-admin')) && role !== 'super_admin') {
       url.pathname = role === 'admin' ? '/admin-dashboard' : '/dashboard'
-      return NextResponse.redirect(url)
+      return createRedirect(url)
     }
 
     if (path === '/login' || path === '/sign-up') {
@@ -242,7 +250,7 @@ export async function proxy(request: NextRequest) {
           : role === 'admin'
             ? '/admin-dashboard'
             : '/dashboard'
-      return NextResponse.redirect(url)
+      return createRedirect(url)
     }
   }
 

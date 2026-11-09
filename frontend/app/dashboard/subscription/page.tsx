@@ -184,93 +184,12 @@ export default async function SubscriptionPage() {
                     className="mt-6"
                   />
 
-                  <div className="my-4 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-white/10" />
-                    <span className="text-xs uppercase tracking-[0.22em] text-zinc-500">or</span>
-                    <div className="h-px flex-1 bg-white/10" />
-                  </div>
-
-                  <ActionForm action={requestSubscriptionPlan} successTitle="Subscription requested" successDescription="We'll review your plan request shortly.">
-                    <input type="hidden" name="plan_id" value={plan.id} />
-                    <button type="submit" className="premium-button w-full">
-                      Request via bank transfer
-                    </button>
-                  </ActionForm>
                 </div>
               )
             })}
           </div>
         </Reveal>
 
-        <Reveal delay={0.08} className="premium-card p-6 md:p-8">
-          <h2 className="text-xl font-semibold text-white">Pending subscription invoices</h2>
-
-          {pendingInvoices.length > 0 ? (
-            <div className="mt-5 space-y-4">
-              {pendingInvoices.map((invoice) => (
-                <div key={invoice.id} className="surface-dark p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        Invoice {invoice.reference_code || invoice.id}
-                      </p>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        Status: {prettifyLabel(invoice.status)}
-                      </p>
-                    </div>
-
-                    <div className="surface-blue px-4 py-3 text-right">
-                      <p className="text-xs uppercase tracking-[0.22em] text-zinc-400">Amount</p>
-                      <p className="mt-2 text-2xl font-semibold text-white">
-                        {formatMoney(invoice.amount_cents)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 surface-dark-soft p-4 text-sm text-zinc-300">
-                    {payoutSettings ? (
-                      <>
-                        <p className="font-medium text-white">{payoutSettings.bank_name}</p>
-                        <p>Account Holder: {payoutSettings.account_holder_name}</p>
-                        <p>IBAN: {payoutSettings.iban}</p>
-                        {payoutSettings.bic_swift ? <p>BIC/SWIFT: {payoutSettings.bic_swift}</p> : null}
-                        {invoice.reference_code ? (
-                          <p className="mt-2">
-                            Reference: <span className="text-white">{invoice.reference_code}</span>
-                          </p>
-                        ) : null}
-                        {payoutSettings.payment_reference_instructions ? (
-                          <p className="mt-2 text-zinc-400">
-                            {payoutSettings.payment_reference_instructions}
-                          </p>
-                        ) : null}
-                      </>
-                    ) : (
-                      <p>Bank transfer instructions will appear once admin configures payout settings.</p>
-                    )}
-                  </div>
-
-                  <ActionForm action={submitSubscriptionPayment} successTitle="Payment submitted" successDescription="Admins have been notified for approval." className="mt-5 space-y-3">
-                    <input type="hidden" name="invoice_id" value={invoice.id} />
-                    <input
-                      type="text"
-                      name="payment_reference"
-                      placeholder="Optional transfer reference"
-                      className="premium-input"
-                    />
-                    <button type="submit" className="premium-button-primary w-full md:w-auto">
-                      I have made the payment
-                    </button>
-                  </ActionForm>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-5 rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm text-zinc-400">
-              No pending subscription invoices at the moment.
-            </div>
-          )}
-        </Reveal>
       </div>
     </DashboardShell>
   )

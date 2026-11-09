@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -20,6 +20,7 @@ export type DashboardNotification = {
   description?: string
   href: string
   tone?: 'brand' | 'warning' | 'error' | 'info'
+  createdAt?: string
 }
 
 type DashboardShellProps = {
@@ -67,6 +68,8 @@ export default function DashboardShell({
   const [searchValue, setSearchValue] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [liveNotifications, setLiveNotifications] = useState<DashboardNotification[]>([])
+  const [readIds, setReadIds] = useState<Set<string>>(new Set())
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
 
   const searchRef = useRef<HTMLInputElement>(null)
   const notifRef = useRef<HTMLDivElement>(null)
@@ -136,18 +139,48 @@ export default function DashboardShell({
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [])
 
-  // Static (server-computed) + live (realtime) notifications, live first
-  const allNotifications = [...liveNotifications, ...notifications]
+  // Static (server-computed) + live (realtime) notifications, deduped and filtered
+  const allNotifications: DashboardNotification[] = useMemo(() => {
+    const combined: DashboardNotification[] = [...liveNotifications, ...notifications]
+    const seen = new Set<string>()
+    return combined.filter((n: DashboardNotification) => {
+      if (dismissedIds.has(n.id)) return false
+      if (seen.has(n.id)) return false
+      seen.add(n.id)
+      return true
+    })
+  }, [liveNotifications, notifications, dismissedIds])
+
+  const unreadCount = allNotifications.filter((n: DashboardNotification) => !readIds.has(n.id)).length
   const hasNotifications = allNotifications.length > 0
 
   function handleLiveNotification(n: DashboardNotification) {
-    setLiveNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)].slice(0, 12))
+    setLiveNotifications((prev) => [n, ...prev.filter((p) => p.id !== n.id)].slice(0, 20))
+  }
+
+  function markAllRead() {
+    setReadIds(new Set([...readIds, ...allNotifications.map((n) => n.id)]))
+  }
+
+  function clearAllNotifications() {
+    setDismissedIds(new Set([...dismissedIds, ...allNotifications.map((n) => n.id)]))
+  }
+
+  function dismissNotification(id: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDismissedIds((prev) => new Set([...prev, id]))
+  }
+
+  function handleNotificationClick(id: string) {
+    setReadIds((prev) => new Set([...prev, id]))
+    setNotifOpen(false)
   }
 
   return (
     <div
-      className="flex w-full"
-      style={{ minHeight: '100vh', backgroundColor: 'var(--canvas)' }}
+      className="flex w-full flex-1"
+      style={{ backgroundColor: 'var(--canvas)' }}
     >
       {/* ── Fixed left sidebar (desktop) ── */}
       {navOpen && (
@@ -294,99 +327,151 @@ export default function DashboardShell({
               />
             )}
 
-            {/* Notifications */}
+            {/* Notifications Bell */}
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 className="mp-btn mp-btn-ghost mp-btn-icon relative"
                 aria-label={
-                  hasNotifications
-                    ? `Notifications (${allNotifications.length})`
+                  unreadCount > 0
+                    ? `Notifications (${unreadCount} unread)`
                     : 'Notifications'
                 }
                 aria-expanded={notifOpen}
                 onClick={() => setNotifOpen((v) => !v)}
               >
-                <BellIcon size={16} aria-hidden />                    {hasNotifications && (
-                      <span
-                        className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: 'var(--warn-400)' }}
-                        aria-hidden
-                      />
-                    )}
+                <BellIcon size={16} aria-hidden />
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-[var(--canvas)] animate-pulse"
+                    style={{ backgroundColor: 'var(--brand-500)' }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {notifOpen && (
                 <div
-                  className="absolute right-0 top-11 z-50 w-[320px] overflow-hidden rounded-xl border shadow-2xl"
+                  className="absolute right-0 top-11 z-50 w-[340px] sm:w-[380px] overflow-hidden rounded-2xl border shadow-2xl animate-fade-up"
                   style={{
                     borderColor: 'var(--hairline-strong)',
                     backgroundColor: 'var(--surface-raised)',
                   }}
                 >
                   <div
-                    className="flex items-center justify-between px-4 py-2.5"
+                    className="flex items-center justify-between px-4 py-3"
                     style={{ borderBottom: '1px solid var(--hairline)' }}
                   >
-                    <p className="text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
-                      Notifications
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
+                        Notifications
+                      </p>
+                      {unreadCount > 0 ? (
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ backgroundColor: 'var(--brand-900)', color: 'var(--brand-300)' }}
+                        >
+                          {unreadCount} unread
+                        </span>
+                      ) : null}
+                    </div>
+
                     {hasNotifications && (
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        style={{ backgroundColor: 'var(--brand-900)', color: 'var(--brand-300)' }}
-                      >
-                        {allNotifications.length} new
-                      </span>
+                      <div className="flex items-center gap-2.5">
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllRead}
+                            className="text-[11px] font-medium transition-colors hover:underline"
+                            style={{ color: 'var(--brand-400)' }}
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearAllNotifications}
+                          className="text-[11px] font-medium transition-colors hover:underline"
+                          style={{ color: 'var(--ink-faint)' }}
+                        >
+                          Clear
+                        </button>
+                      </div>
                     )}
                   </div>
 
-                  <div className="max-h-[320px] overflow-y-auto">
+                  <div className="max-h-[360px] overflow-y-auto divide-y divide-[var(--hairline)]">
                     {hasNotifications ? (
                       allNotifications.map((n) => {
                         const tone = NOTIF_TONE[n.tone ?? 'brand']
+                        const isUnread = !readIds.has(n.id)
                         return (
-                          <Link
+                          <div
                             key={n.id}
-                            href={n.href}
-                            onClick={() => setNotifOpen(false)}
-                            className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
-                            style={{ borderBottom: '1px solid var(--hairline)' }}
+                            className={`group relative flex items-start gap-3 p-3.5 transition-colors ${
+                              isUnread
+                                ? 'bg-[rgba(200,27,28,0.04)] hover:bg-[rgba(200,27,28,0.08)]'
+                                : 'hover:bg-[rgba(255,255,255,0.03)]'
+                            }`}
                           >
-                            <span
-                              className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: tone.dot }}
-                              aria-hidden
-                            />
-                            <span className="min-w-0 flex-1">
+                            <Link
+                              href={n.href}
+                              onClick={() => handleNotificationClick(n.id)}
+                              className="flex flex-1 items-start gap-3 min-w-0"
+                            >
                               <span
-                                className="block text-[13px] font-medium leading-5"
-                                style={{ color: 'var(--ink)' }}
-                              >
-                                {n.title}
-                              </span>
-                              {n.description && (
+                                className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: tone.dot }}
+                                aria-hidden
+                              />
+                              <span className="min-w-0 flex-1">
                                 <span
-                                  className="mt-0.5 block text-[12px] leading-5"
-                                  style={{ color: 'var(--ink-faint)' }}
+                                  className={`block text-[13px] leading-snug ${
+                                    isUnread ? 'font-semibold' : 'font-medium'
+                                  }`}
+                                  style={{ color: isUnread ? 'var(--ink)' : 'var(--ink-muted)' }}
                                 >
-                                  {n.description}
+                                  {n.title}
                                 </span>
-                              )}
-                            </span>
-                            <ChevronRightIcon
-                              size={14}
-                              className="mt-1 shrink-0"
-                              style={{ color: 'var(--ink-faint)' }}
-                              aria-hidden
-                            />
-                          </Link>
+                                {n.description && (
+                                  <span
+                                    className="mt-1 block text-[12px] leading-relaxed line-clamp-2"
+                                    style={{ color: 'var(--ink-faint)' }}
+                                  >
+                                    {n.description}
+                                  </span>
+                                )}
+                              </span>
+                            </Link>
+                            <button
+                              type="button"
+                              aria-label="Dismiss notification"
+                              onClick={(e) => dismissNotification(n.id, e)}
+                              className="shrink-0 rounded p-1 text-[var(--ink-faint)] opacity-0 group-hover:opacity-100 hover:text-[var(--ink)] hover:bg-white/5 transition-all"
+                            >
+                              <XIcon size={13} aria-hidden />
+                            </button>
+                          </div>
                         )
                       })
                     ) : (
-                      <div className="px-4 py-8 text-center">
-                        <p className="text-[13px]" style={{ color: 'var(--ink-faint)' }}>
-                          You&apos;re all caught up.
+                      <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-full border mb-2"
+                          style={{
+                            borderColor: 'var(--hairline)',
+                            backgroundColor: 'var(--surface)',
+                            color: 'var(--brand-400)',
+                          }}
+                        >
+                          <BellIcon size={16} />
+                        </div>
+                        <p className="text-[13px] font-medium" style={{ color: 'var(--ink)' }}>
+                          All caught up!
+                        </p>
+                        <p className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-faint)' }}>
+                          You have no unread notifications.
                         </p>
                       </div>
                     )}

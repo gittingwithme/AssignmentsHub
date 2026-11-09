@@ -1,25 +1,14 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 import { login } from '@/app/auth-actions'
-import TurnstileCaptcha from './turnstile-captcha'
 
 export default function LoginFormClient({ error, message }: { error?: string; message?: string }) {
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [captchaError, setCaptchaError] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    if (!captchaToken) {
-      e.preventDefault()
-      setCaptchaError(true)
-      return
-    }
-    setCaptchaError(false)
-  }
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <form ref={formRef} action={login} onSubmit={handleSubmit} className="space-y-4">
+    <form action={login} className="space-y-4" suppressHydrationWarning>
       {message ? (
         <div className="alert alert-info mb-5">{message}</div>
       ) : null}
@@ -37,8 +26,10 @@ export default function LoginFormClient({ error, message }: { error?: string; me
           name="email"
           type="email"
           required
+          autoComplete="email"
           className="premium-input"
           placeholder="you@example.com"
+          suppressHydrationWarning
         />
       </div>
 
@@ -46,32 +37,32 @@ export default function LoginFormClient({ error, message }: { error?: string; me
         <label htmlFor="password" className="text-sm font-medium text-zinc-200">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          className="premium-input"
-          placeholder="Enter your password"
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="current-password"
+            className="premium-input pr-10"
+            placeholder="Enter your password"
+            suppressHydrationWarning
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none"
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOffIcon size={16} aria-hidden />
+            ) : (
+              <EyeIcon size={16} aria-hidden />
+            )}
+          </button>
+        </div>
       </div>
-
-      <div className="flex justify-center">
-        <TurnstileCaptcha
-          onVerify={(token) => {
-            setCaptchaToken(token)
-            setCaptchaError(false)
-          }}
-          onExpire={() => setCaptchaToken(null)}
-          onError={() => setCaptchaError(true)}
-        />
-      </div>
-
-      {captchaError && (
-        <p className="text-center text-sm text-red-400">Please complete the captcha verification</p>
-      )}
-
-      <input type="hidden" name="cf-turnstile-response" value={captchaToken || ''} />
 
       <button type="submit" className="premium-button-primary mt-2 w-full">
         Log in

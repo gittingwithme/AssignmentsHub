@@ -5,9 +5,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, clearRateLimitOnSuccess } from '@/lib/rate-limit'
-import { verifyTurnstileToken } from '@/lib/turnstile-server'
 import { validatePassword } from '@/lib/password-validation'
-import { validatePasswordNotPwned } from '@/lib/pwned-passwords'
 import { logAuthEvent, logSecurityEvent } from '@/lib/audit-log'
 import { AuditActions } from '@/lib/audit-actions'
 import { detectCredentialStuffing } from '@/lib/credential-stuffing-monitor'
@@ -66,12 +64,6 @@ export async function login(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent(`Too many attempts. Try again in ${waitMinutes} minutes.`))
   }
 
-  const turnstileToken = String(formData.get('cf-turnstile-response') || '')
-  const turnstileResult = await verifyTurnstileToken(turnstileToken)
-  if (!turnstileResult.success) {
-    redirect('/login?error=' + encodeURIComponent(turnstileResult.error || 'Captcha verification failed'))
-  }
-
   const supabase = await createClient()
   const email = String(formData.get('email') || '').trim()
   const password = String(formData.get('password') || '')
@@ -124,12 +116,6 @@ export async function signup(formData: FormData) {
     redirect('/sign-up?error=' + encodeURIComponent(`Too many attempts. Try again in ${waitMinutes} minutes.`))
   }
 
-  const turnstileToken = String(formData.get('cf-turnstile-response') || '')
-  const turnstileResult = await verifyTurnstileToken(turnstileToken)
-  if (!turnstileResult.success) {
-    redirect('/sign-up?error=' + encodeURIComponent(turnstileResult.error || 'Captcha verification failed'))
-  }
-
   const supabase = await createClient()
   const fullName = sanitizeUserInput(String(formData.get('full_name') || ''))
   const email = String(formData.get('email') || '').trim().toLowerCase()
@@ -142,11 +128,6 @@ export async function signup(formData: FormData) {
   const passwordValidation = validatePassword(password, email, fullName)
   if (!passwordValidation.valid) {
     redirect('/sign-up?error=' + encodeURIComponent(passwordValidation.errors[0]))
-  }
-
-  const pwnedCheck = await validatePasswordNotPwned(password)
-  if (!pwnedCheck.valid) {
-    redirect('/sign-up?error=' + encodeURIComponent(pwnedCheck.error || 'Password has been compromised'))
   }
 
   const origin = await getSiteOrigin()
@@ -229,12 +210,6 @@ export async function requestPasswordReset(formData: FormData) {
     redirect('/forgot-password?error=' + encodeURIComponent(`Too many requests. Try again in ${waitMinutes} minutes.`))
   }
 
-  const turnstileToken = String(formData.get('cf-turnstile-response') || '')
-  const turnstileResult = await verifyTurnstileToken(turnstileToken)
-  if (!turnstileResult.success) {
-    redirect('/forgot-password?error=' + encodeURIComponent(turnstileResult.error || 'Captcha verification failed'))
-  }
-
   const supabase = await createClient()
   const email = String(formData.get('email') || '').trim().toLowerCase()
 
@@ -272,11 +247,6 @@ export async function confirmPasswordReset(formData: FormData) {
   const passwordValidation = validatePassword(password, '', '')
   if (!passwordValidation.valid) {
     redirect(`/reset-password?error=${encodeURIComponent(passwordValidation.errors[0])}`)
-  }
-
-  const pwnedCheck = await validatePasswordNotPwned(password)
-  if (!pwnedCheck.valid) {
-    redirect(`/reset-password?error=${encodeURIComponent(pwnedCheck.error || 'Password has been compromised. Please choose a different password.')}`)
   }
 
   const { data: { user }, error } = await supabase.auth.updateUser({ password })

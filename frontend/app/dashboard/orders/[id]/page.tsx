@@ -79,13 +79,21 @@ export default async function CustomerOrderDetailPage({
 
   const displayAmount = formatMoney(order.quote_amount_cents ?? invoice?.amount_cents, order.price)
 
-  let paymentState: 'awaiting_payment' | 'pending_approval' | 'approved' | 'rejected' =
+  let paymentState: 'awaiting_payment' | 'processing' | 'pending_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled' | 'expired' =
     'awaiting_payment'
 
   if (approval?.rejected_at) {
     paymentState = 'rejected'
-  } else if (approval?.approved_at) {
+  } else if (approval?.approved_at || order.payment_status === 'approved') {
     paymentState = 'approved'
+  } else if (order.payment_status === 'processing') {
+    paymentState = 'processing'
+  } else if (order.payment_status === 'failed') {
+    paymentState = 'failed'
+  } else if (order.payment_status === 'cancelled') {
+    paymentState = 'cancelled'
+  } else if (order.payment_status === 'expired') {
+    paymentState = 'expired'
   } else if (
     ['payment_submitted', 'pending_approval', 'verification_pending'].includes(order.payment_status || '')
   ) {
@@ -164,67 +172,24 @@ export default async function CustomerOrderDetailPage({
         </Reveal>
 
         <Reveal delay={0.05}>
-          {displayAmount && paymentState === 'awaiting_payment' ? (
+          {displayAmount && ['awaiting_payment', 'processing', 'failed', 'cancelled', 'expired'].includes(paymentState) ? (
             <div className="premium-card p-6 md:p-8">
               <h2 className="text-xl font-semibold text-white">Payment required</h2>
               <p className="mt-2 text-sm text-zinc-400">
-                Pay instantly with card or complete a bank transfer below.
+                Complete your payment securely. You will be redirected to our secure payment portal to authorize the payment.
               </p>
 
-              {/* ── Option 1: Stripe ─────────────────────────────── */}
-              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-400 mb-3">Option 1 — Instant card payment</p>
+              <div className="mt-6 flex flex-col items-start gap-4">
                 <StripePayButton
                   orderId={order.id}
                   invoiceId={invoice?.id}
                   amount={displayAmount}
+                  paymentStatus={paymentState}
+                  lastError={order.last_payment_error}
                 />
-              </div>
-
-              {/* ── Divider ──────────────────────────────────────── */}
-              <div className="my-5 flex items-center gap-4">
-                <div className="h-px flex-1 bg-white/10" />
-                <span className="text-xs uppercase tracking-[0.22em] text-zinc-500">or</span>
-                <div className="h-px flex-1 bg-white/10" />
-              </div>
-
-              {/* ── Option 2: Bank Transfer (existing flow) ───── */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-400 mb-3">Option 2 — Bank transfer</p>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
-                  {payoutSettings ? (
-                    <>
-                      <p className="font-medium text-white">{payoutSettings.bank_name}</p>
-                      <p>Account Holder: {payoutSettings.account_holder_name}</p>
-                      <p>IBAN: {payoutSettings.iban}</p>
-                      {payoutSettings.bic_swift ? <p>BIC/SWIFT: {payoutSettings.bic_swift}</p> : null}
-                      {invoice?.reference_code ? (
-                        <p className="mt-2">
-                          Reference: <span className="text-white">{invoice.reference_code}</span>
-                        </p>
-                      ) : null}
-                      {payoutSettings.payment_reference_instructions ? (
-                        <p className="mt-2 text-zinc-400">{payoutSettings.payment_reference_instructions}</p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p>Bank transfer instructions will appear once admin configures payout settings.</p>
-                  )}
-                </div>
-
-                <ActionForm action={notifyPaymentMade} successTitle="Payment submitted" successDescription="Admins have been notified for approval." className="mt-4 space-y-3">
-                  <input type="hidden" name="order_id" value={order.id} />
-                  <input type="hidden" name="order_title" value={order.title} />
-                  <input
-                    type="text"
-                    name="payment_reference"
-                    placeholder="Optional transfer reference"
-                    className="premium-input"
-                  />
-                  <button type="submit" className="premium-button w-full md:w-auto">
-                    I have made the bank transfer
-                  </button>
-                </ActionForm>
+                <p className="text-xs text-zinc-500">
+                  You will be redirected to Stripe to securely complete your payment.
+                </p>
               </div>
             </div>
           ) : !hideApprovedBanner && approval ? (

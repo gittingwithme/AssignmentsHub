@@ -57,13 +57,14 @@ export default async function AdminOrderDetailPage({
     redirect('/dashboard')
   }
 
-  const [{ data: order }, { data: files }, { data: messages }, { data: invoice }, { data: approval }] =
+  const [{ data: order }, { data: files }, { data: messages }, { data: invoice }, { data: approval }, { data: paymentEvents }] =
     await Promise.all([
       supabase.from('orders').select('*').eq('id', id).maybeSingle(),
       supabase.from('order_files').select('*').eq('order_id', id).order('created_at', { ascending: true }),
       supabase.from('messages').select('*').eq('order_id', id).order('created_at', { ascending: true }),
       supabase.from('invoices').select('*').eq('order_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('payment_approvals').select('*').order('submitted_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('payment_events').select('*').eq('order_id', id).order('created_at', { ascending: false }),
     ])
 
   if (!order) redirect('/admin-dashboard')
@@ -79,6 +80,10 @@ export default async function AdminOrderDetailPage({
     <DashboardShell
       workspaceLabel="Admin Workspace"
       activeItem="Order Details"
+      roleLabel="Admin"
+      currentUserId={user.id}
+      role={profile?.role || 'admin'}
+      orderContext={{ [order.id]: order.title }}
       header={
         <Reveal className="glass-panel flex flex-col gap-4 rounded-[30px] px-5 py-5 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
@@ -182,6 +187,51 @@ export default async function AdminOrderDetailPage({
                       Reject payment
                     </button>
                   </ActionForm>
+                </div>
+              ) : null}
+
+              {/* Payment Audit Trail */}
+              {(paymentEvents ?? []).length > 0 ? (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-400">Payment Audit Trail</h3>
+                  <div className="mt-3 space-y-2">
+                    {(paymentEvents ?? []).map((evt: { id: string; status: string; created_at: string; amount_cents?: number; failure_reason?: string | null; failure_code?: string | null; stripe_session_id?: string | null; payment_type?: string }) => {
+                      const statusColors: Record<string, string> = {
+                        initiated: 'rgb(100, 160, 255)',
+                        processing: 'rgb(255, 179, 0)',
+                        succeeded: 'rgb(52, 199, 89)',
+                        failed: 'rgb(255, 69, 58)',
+                        cancelled: 'rgb(174, 174, 178)',
+                        expired: 'rgb(174, 174, 178)',
+                      }
+                      const color = statusColors[evt.status] || 'var(--ink-faint)'
+                      return (
+                        <div key={evt.id} className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                              <span className="font-medium capitalize" style={{ color }}>{evt.status}</span>
+                              {evt.payment_type ? (
+                                <span className="text-zinc-500">({evt.payment_type.replace('_', ' ')})</span>
+                              ) : null}
+                            </div>
+                            <span className="tabular-nums text-zinc-500">
+                              {new Date(evt.created_at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'medium' })}
+                            </span>
+                          </div>
+                          {evt.amount_cents ? (
+                            <p className="mt-1 text-zinc-400">Amount: €{(evt.amount_cents / 100).toFixed(2)}</p>
+                          ) : null}
+                          {evt.failure_reason ? (
+                            <p className="mt-1" style={{ color: 'rgb(255, 100, 90)' }}>Reason: {evt.failure_reason}</p>
+                          ) : null}
+                          {evt.stripe_session_id ? (
+                            <p className="mt-1 font-mono text-zinc-600 truncate">Session: {evt.stripe_session_id}</p>
+                          ) : null}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               ) : null}
             </div>

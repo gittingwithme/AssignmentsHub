@@ -65,10 +65,11 @@ function prettifyLabel(value: string | null | undefined) {
 
 function needsAttention(
   order: OrderRow,
-  paymentState: 'awaiting_payment' | 'pending_approval' | 'approved' | 'rejected',
+  paymentState: 'awaiting_payment' | 'processing' | 'pending_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled' | 'expired',
   displayAmount: string | null
 ) {
   if (paymentState === 'pending_approval' || paymentState === 'rejected') return true
+  if (paymentState === 'failed' || paymentState === 'cancelled' || paymentState === 'expired') return true
   if (!displayAmount && ['review_pending', 'draft', 'pending'].includes(order.status_key || order.status || '')) {
     return true
   }
@@ -218,9 +219,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
                   const invoice = invoiceByOrderId.get(order.id)
                   const approval = invoice ? approvalByInvoiceId.get(invoice.id) : undefined
                   const displayAmount = formatMoney(order.quote_amount_cents ?? invoice?.amount_cents, order.price)
-                  let paymentState: 'awaiting_payment' | 'pending_approval' | 'approved' | 'rejected' = 'awaiting_payment'
+                  let paymentState: 'awaiting_payment' | 'processing' | 'pending_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled' | 'expired' = 'awaiting_payment'
                   if (approval?.rejected_at) paymentState = 'rejected'
-                  else if (approval?.approved_at) paymentState = 'approved'
+                  else if (approval?.approved_at || order.payment_status === 'approved') paymentState = 'approved'
+                  else if (order.payment_status === 'processing') paymentState = 'processing'
+                  else if (order.payment_status === 'failed') paymentState = 'failed'
+                  else if (order.payment_status === 'cancelled') paymentState = 'cancelled'
+                  else if (order.payment_status === 'expired') paymentState = 'expired'
                   else if (['payment_submitted', 'pending_approval', 'verification_pending'].includes(order.payment_status || '')) paymentState = 'pending_approval'
                   const hideApprovedBanner = paymentState === 'approved' && !!approval?.approval_note_seen_at
                   let statusNote: ReactNode = null

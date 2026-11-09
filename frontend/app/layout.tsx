@@ -50,11 +50,12 @@ export default function RootLayout({
        suppressHydrationWarning: browser extensions frequently rewrite <html>
        attributes (theme classes, data-*) before React hydrates, which otherwise
        triggers a false-positive attribute mismatch on every load. */
-    <html lang="en" className="intro" suppressHydrationWarning>
+    <html lang="en" style={{ backgroundColor: '#080909', color: '#FFFFFF' }} suppressHydrationWarning>
       {/* flex-col so footer always stacks below content, never beside the sidebar */}
       <body
         className={`${sg.variable} ${jb.variable} flex min-h-screen flex-col`}
         style={{ backgroundColor: 'var(--canvas)', color: 'var(--ink)' }}
+        suppressHydrationWarning
       >
         <AmbientBackground />
         <ToastProvider>

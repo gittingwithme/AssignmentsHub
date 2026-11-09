@@ -1,6 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
 
 // Session configuration constants
 export const SESSION_CONFIG = {
@@ -150,33 +148,40 @@ export async function clearSession(): Promise<void> {
 }
 
 export async function secureSignOut(): Promise<void> {
-  const supabase = await createClient()
-  
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session) {
+  try {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
     await supabase.auth.signOut()
+  } catch (err) {
+    console.warn('[auth] secureSignOut error:', err)
   }
   
   await clearSession()
 }
 
-// Proxy helper to validate session
+// Proxy helper to validate session without calling next/headers cookies()
 export async function validateSessionInProxy(
-  supabase: ReturnType<typeof createServerClient>
-): Promise<{ valid: boolean; userId?: string; reason?: string }> {
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return { valid: false, reason: 'No authenticated user' }
+  request: import('next/server').NextRequest
+): Promise<{ valid: boolean; reason?: string }> {
+  const cookie = request.cookies.get(SESSION_CONFIG.SESSION_COOKIE_NAME)
+  if (!cookie?.value) {
+    return { valid: true } // No metadata = first request or standard session
   }
-  
-  const timeoutCheck = await checkSessionTimeout()
-  if (!timeoutCheck.valid) {
-    return { valid: false, reason: timeoutCheck.reason, userId: user.id }
+
+  const metadata = await decodeMetadata(cookie.value)
+  if (!metadata) {
+    return { valid: true }
   }
-  
-  await refreshSessionActivity()
-  return { valid: true, userId: user.id }
+
+  const now = Date.now()
+  if (now - metadata.createdAt > SESSION_CONFIG.ABSOLUTE_TIMEOUT_MS) {
+    return { valid: false, reason: 'Session expired (absolute timeout)' }
+  }
+  if (now - metadata.lastActivity > SESSION_CONFIG.IDLE_TIMEOUT_MS) {
+    return { valid: false, reason: 'Session expired (idle timeout)' }
+  }
+
+  return { valid: true }
 }
 
 // Get recommended Supabase JWT settings (for documentation)

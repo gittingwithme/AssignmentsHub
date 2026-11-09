@@ -1,36 +1,29 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 import { signup } from '@/app/auth-actions'
-import TurnstileCaptcha from './turnstile-captcha'
 import { validatePassword, getPasswordStrengthLabel, getPasswordStrengthColor } from '@/lib/password-validation'
 
 export default function SignupFormClient({ error }: { error?: string }) {
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [captchaError, setCaptchaError] = useState(false)
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   const passwordValidation = validatePassword(password, email, fullName)
   const showPasswordStrength = password.length > 0
 
   const handleSubmit = (e: React.FormEvent) => {
-    if (!captchaToken) {
-      e.preventDefault()
-      setCaptchaError(true)
-      return
-    }
     if (!passwordValidation.valid) {
       e.preventDefault()
       return
     }
-    setCaptchaError(false)
   }
 
   return (
-    <form ref={formRef} action={signup} onSubmit={handleSubmit} className="space-y-4">
+    <form ref={formRef} action={signup} onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
       {error ? (
         <div className="alert alert-error mb-5">{error}</div>
       ) : null}
@@ -44,10 +37,12 @@ export default function SignupFormClient({ error }: { error?: string }) {
           name="full_name"
           type="text"
           required
+          autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="premium-input"
           placeholder="Your full name"
+          suppressHydrationWarning
         />
       </div>
 
@@ -60,10 +55,12 @@ export default function SignupFormClient({ error }: { error?: string }) {
           name="email"
           type="email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="premium-input"
           placeholder="you@example.com"
+          suppressHydrationWarning
         />
       </div>
 
@@ -71,49 +68,42 @@ export default function SignupFormClient({ error }: { error?: string }) {
         <label htmlFor="password" className="text-sm font-medium text-zinc-200">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={12}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="premium-input"
-          placeholder="Create a secure password"
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="premium-input pr-10"
+            placeholder="Create a password"
+            suppressHydrationWarning
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none"
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOffIcon size={16} aria-hidden />
+            ) : (
+              <EyeIcon size={16} aria-hidden />
+            )}
+          </button>
+        </div>
         {showPasswordStrength && (
           <div className="mt-1 text-xs">
             <span className={getPasswordStrengthColor(passwordValidation.strength)}>
-              {getPasswordStrengthLabel(passwordValidation.strength)}
+              Strength: {getPasswordStrengthLabel(passwordValidation.strength)}
             </span>
-            {passwordValidation.errors.length > 0 && (
-              <ul className="mt-1 text-red-400">
-                {passwordValidation.errors.map((err, i) => (
-                  <li key={i}>{err}</li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
       </div>
-
-      <div className="flex justify-center">
-        <TurnstileCaptcha
-          onVerify={(token) => {
-            setCaptchaToken(token)
-            setCaptchaError(false)
-          }}
-          onExpire={() => setCaptchaToken(null)}
-          onError={() => setCaptchaError(true)}
-        />
-      </div>
-
-      {captchaError && (
-        <p className="text-center text-sm text-red-400">Please complete the captcha verification</p>
-      )}
-
-      <input type="hidden" name="cf-turnstile-response" value={captchaToken || ''} />
 
       <p className="text-xs leading-6 text-zinc-400">
         Email sign-up requires a reachable email address. You will receive a confirmation link

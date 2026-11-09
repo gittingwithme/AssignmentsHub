@@ -56,6 +56,8 @@ export default async function SecurityPage() {
       workspaceLabel="Customer Workspace"
       activeItem="Security"
       roleLabel="Customer"
+      currentUserId={user.id}
+      role="customer"
       sidebar={
         <DashboardSidebar
           title="AssignmentsHub"

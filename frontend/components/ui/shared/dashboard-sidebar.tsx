@@ -206,7 +206,16 @@ export default function DashboardSidebar({
               {subtitle || roleLabel || 'AssignmentsHub'}
             </span>
           </span>
-          <LogOutIcon size={14} style={{ color: 'var(--ink-faint)' }} aria-hidden />
+          <form action="/auth/signout" method="post" className="m-0 flex shrink-0 items-center">
+            <button
+              type="submit"
+              title="Log out"
+              aria-label="Log out"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-faint)] transition-all hover:bg-white/[0.08] hover:text-red-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
+            >
+              <LogOutIcon size={14} aria-hidden />
+            </button>
+          </form>
         </div>
 
         <button

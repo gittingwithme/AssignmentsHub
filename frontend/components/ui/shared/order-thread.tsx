@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo, useActionState } from 'react'
+import { useEffect, useState, useRef, useMemo, useActionState, startTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -73,12 +73,11 @@ export default function OrderThread({
   composerPlaceholder: string
   otherPartyLabel: string
 }) {
-  // Live messages arrive via realtime; server-rendered messages re-fetch on
-  // revalidation. Merge both (deduped, sorted) instead of syncing state.
   const [liveMessages, setLiveMessages] = useState<OrderThreadMessage[]>([])
   const [replyTo, setReplyTo] = useState<OrderThreadMessage | null>(null)
   const swipeRef = useRef<SwipeState>({ messageId: null, startX: 0, startY: 0, moved: false })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const endOfMessagesRef = useRef<HTMLDivElement>(null)
   const supabase = useMemo(() => createClient(), [])
 
@@ -116,9 +115,8 @@ export default function OrderThread({
     swipeRef.current = { messageId: null, startX: 0, startY: 0, moved: false }
   }
 
-  // Merge server-rendered + live messages (deduped, sorted) at render time;
-  // the React Compiler memoizes this for us, so no manual useMemo is needed.
-  const messages = (() => {
+  // Merge server-rendered + live messages (deduped, sorted)
+  const messages = useMemo(() => {
     const uniqueIds = new Set(initialMessages.map((m) => m.id))
     const combined = [
       ...initialMessages,
@@ -128,24 +126,16 @@ export default function OrderThread({
       (a, b) =>
         new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime()
     )
-  })()
+  }, [initialMessages, liveMessages])
 
   const [composerState, formAction, pending] = useActionState(submitMessage, null)
 
   // Scroll to bottom when messages update
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages])
+  }, [messages.length])
 
-  // Clear composer after a successful send (textarea is uncontrolled)
-  useEffect(() => {
-    if (composerState?.ok) {
-      const el = textareaRef.current
-      if (el) el.value = ''
-      textareaRef.current?.focus()
-    }
-  }, [composerState])
-
+  // Realtime subscription
   useEffect(() => {
     const markRead = async () => {
       try {
@@ -172,8 +162,19 @@ export default function OrderThread({
         (payload) => {
           const newMessage = payload.new as OrderThreadMessage
           setLiveMessages((prev) => {
-            if (prev.find((m) => m.id === newMessage.id)) return prev
-            return [...prev, newMessage]
+            // Replace matching temp optimistic message if present, or append
+            const filtered = prev.filter((m) => {
+              if (m.id === newMessage.id) return false
+              if (
+                m.id.startsWith('temp-') &&
+                m.sender_id === newMessage.sender_id &&
+                m.body === newMessage.body
+              ) {
+                return false
+              }
+              return true
+            })
+            return [...filtered, newMessage]
           })
           markRead()
         }
@@ -184,6 +185,32 @@ export default function OrderThread({
       supabase.removeChannel(channel)
     }
   }, [orderId, supabase])
+
+  // Optimistic submit handler
+  function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    const rawBody = String(formData.get('body') || '').trim()
+    if (!rawBody || pending) return
+
+    const tempId = `temp-${Date.now()}`
+    const optimisticMsg: OrderThreadMessage = {
+      id: tempId,
+      sender_id: currentUserId,
+      body: rawBody,
+      created_at: new Date().toISOString(),
+      reply_to: replyTo?.id || null,
+    }
+
+    setLiveMessages((prev) => [...prev, optimisticMsg])
+    setReplyTo(null)
+    if (textareaRef.current) textareaRef.current.value = ''
+
+    startTransition(() => {
+      formAction(formData)
+    })
+  }
 
 
 
@@ -322,7 +349,7 @@ export default function OrderThread({
       </div>
 
       {/* ── Composer ── */}
-      <form action={formAction} className="mt-3">
+      <form ref={formRef} onSubmit={handleFormSubmit} className="mt-3">
         <input type="hidden" name="order_id" value={orderId} />
         <input type="hidden" name="reply_to" value={replyTo?.id || ''} />
 

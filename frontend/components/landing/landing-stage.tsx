@@ -62,16 +62,12 @@ const stats = [
   { num: '24h', lab: 'Avg. turnaround' },
 ]
 
-const resourcesSub = [
-  { href: '/faq', label: 'FAQ' },
-  { href: '/academic-integrity', label: 'Academic integrity' },
-  { href: '/revision-policy', label: 'Revision policy' },
-]
-
-const benefitsSub = [
-  { href: '/how-it-works', label: 'How it works' },
-  { href: '/one-time-work', label: 'One-time work' },
+const navItems = [
+  { href: '/services', label: 'Services' },
   { href: '/plans', label: 'Plans' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/terms', label: 'Terms' },
+  { href: '/contact', label: 'Contact' },
 ]
 
 const EXPO = 'cubic-bezier(.16,1,.3,1)'
@@ -349,13 +345,11 @@ export default function LandingStage({ authenticated }: { authenticated: boolean
 
         <nav className="lnav" aria-label="Primary">
           <Link href="/">Home</Link>
-          <Link href="/faq">
-            Resources <Chevron />
-          </Link>
-          <Link href="/how-it-works">
-            Benefits <Chevron />
-          </Link>
-          <Link href="/contact">Contact</Link>
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href}>
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="hdr-right">
@@ -537,53 +531,13 @@ export default function LandingStage({ authenticated }: { authenticated: boolean
                 Home
               </Link>
             </li>
-            <li className={`mrow${acc === 'resources' ? ' open' : ''}`}>
-              <button
-                type="button"
-                aria-expanded={acc === 'resources'}
-                onClick={() => toggleAcc('resources')}
-              >
-                Resources
-                <span className="m-chev" aria-hidden>
-                  <Chevron />
-                </span>
-              </button>
-              <ul className="mrow-sub">
-                {resourcesSub.map((l) => (
-                  <li key={l.href}>
-                    <Link href={l.href} onClick={closeMenu}>
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </li>
-            <li className={`mrow${acc === 'benefits' ? ' open' : ''}`}>
-              <button
-                type="button"
-                aria-expanded={acc === 'benefits'}
-                onClick={() => toggleAcc('benefits')}
-              >
-                Benefits
-                <span className="m-chev" aria-hidden>
-                  <Chevron />
-                </span>
-              </button>
-              <ul className="mrow-sub">
-                {benefitsSub.map((l) => (
-                  <li key={l.href}>
-                    <Link href={l.href} onClick={closeMenu}>
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </li>
-            <li className="mrow">
-              <Link href="/contact" onClick={closeMenu}>
-                Contact
-              </Link>
-            </li>
+            {navItems.map((item) => (
+              <li className="mrow" key={item.href}>
+                <Link href={item.href} onClick={closeMenu}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
           <div className="menu-foot">
             <Link href={ctaHref} onClick={closeMenu} className="btn btn-menu">
